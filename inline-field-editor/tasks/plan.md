@@ -33,7 +33,7 @@ ghi lại vào note thật.
 
 ### Phase 0: Foundation & Verification
 
-- [ ] **Task 1: Tạo Anki profile test riêng**
+- [x] **Task 1: Tạo Anki profile test riêng** — DONE, profile `IFE-Test` đã tạo.
   - **Description:** Tạo 1 profile Anki mới (vd tên `IFE-Test`) chỉ chứa 1-2 note giả (note type
     Basic, field Front/Back) để dùng cho mọi bước test thủ công sau này — không đụng profile
     `User 1` thật.
@@ -67,7 +67,10 @@ ghi lại vào note thật.
   - **Files likely touched:** `inline-field-editor/docs/api-notes.md` (mới)
   - **Estimated scope:** S
 
-- [ ] **Task 3: Add-on skeleton load được trong Anki thật**
+- [x] **Task 3: Add-on skeleton load được trong Anki thật** — DONE. Symlink dùng Windows
+  Junction (`New-Item -ItemType Junction`) thay vì `mklink /D` vì máy không có quyền admin để
+  tạo symbolic link — hoạt động tương đương cho mục đích này. User xác nhận add-on hiện đúng
+  trong Tools → Add-ons sau khi restart Anki, không lỗi.
   - **Description:** Tạo `manifest.json` + `__init__.py` tối thiểu (chỉ log "Inline Field Editor
     loaded"), symlink vào `addons21/` của profile `IFE-Test`, xác nhận Anki khởi động không lỗi.
   - **Acceptance criteria:**

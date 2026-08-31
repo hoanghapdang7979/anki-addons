@@ -3,9 +3,9 @@
 Chi tiết đầy đủ từng task (acceptance criteria, verification, files): xem [plan.md](./plan.md).
 
 ## Phase 0: Foundation & Verification
-- [ ] Task 1: Tạo Anki profile test riêng (`IFE-Test`) — không dùng `User 1` thật (chờ user tự làm — computer-use bị từ chối quyền truy cập Anki)
+- [x] Task 1: Tạo Anki profile test riêng (`IFE-Test`) — không dùng `User 1` thật
 - [x] Task 2: Verify Anki API thật (update note, field filter hook, webview bridge hook) — ghi vào `docs/api-notes.md`
-- [ ] Task 3: Add-on skeleton (`manifest.json` + `__init__.py`) load sạch trong Anki thật
+- [x] Task 3: Add-on skeleton (`manifest.json` + `__init__.py`) load sạch trong Anki thật
 
 **Checkpoint 0:** API đã verify, skeleton load được → review với user trước khi tiếp tục.
 

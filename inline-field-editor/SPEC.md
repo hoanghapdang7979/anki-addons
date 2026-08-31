@@ -36,19 +36,37 @@ card đang review.
 ## Commands
 
 ```bash
-# Test (phần logic thuần, không cần Anki thật chạy)
-pytest inline-field-editor/tests -v
+# Test (phần logic thuần, không cần Anki thật chạy) — PHẢI chạy với cwd bên trong tests/,
+# không phải "pytest inline-field-editor/tests" từ repo root (xem lưu ý bên dưới).
+cd inline-field-editor/tests
+../.venv/Scripts/python -m pytest . -v
 
-# Cài để test thủ công trong Anki thật (Windows, PowerShell)
-New-Item -ItemType SymbolicLink `
+# Cài venv riêng để chạy test / đọc source anki-aqt thật (không dùng để chạy Anki)
+cd inline-field-editor
+python -m venv .venv
+.venv/Scripts/pip install aqt pytest
+
+# Cài để test thủ công trong Anki thật (Windows) — máy không có quyền admin nên dùng Junction
+# thay vì symbolic link (New-Item -ItemType SymbolicLink báo "Administrator privilege required")
+New-Item -ItemType Junction `
   -Path "$env:APPDATA\Anki2\addons21\inline-field-editor" `
   -Target "C:\Users\Client\Desktop\anki-addons\inline-field-editor"
-# Restart Anki sau khi symlink, rồi Tools → Add-ons → View Files để xác nhận đúng thư mục.
+# Restart Anki sau khi tạo junction, rồi Tools → Add-ons → View Files để xác nhận đúng thư mục.
+# addons21/ dùng chung cho MỌI profile — chỉ profile IFE-Test mới dùng để test thao tác thật.
 
 # Đóng gói .ankiaddon (khi cần chia sẻ/backup, không phải bước bắt buộc cho dùng cá nhân)
 cd inline-field-editor
-zip -r ../inline-field-editor.ankiaddon . -x "__pycache__/*" "meta.json" "tests/*"
+zip -r ../inline-field-editor.ankiaddon . -x "__pycache__/*" "meta.json" "tests/*" ".venv/*"
 ```
+
+> **Lưu ý về lệnh test:** tên thư mục add-on có dấu gạch ngang (`inline-field-editor`) — hợp lệ
+> với cách Anki tự import add-on (dùng `importlib.import_module()` với string thô, không qua cú
+> pháp `import` nên không cần định danh Python hợp lệ), nhưng **không hợp lệ** với cơ chế
+> "Package" collection của pytest khi bạn truyền đường dẫn dạng `pytest inline-field-editor/tests`
+> — pytest cố coi `inline-field-editor` là 1 Python package (vì có `__init__.py`) rồi import nó
+> theo tên thư mục, vốn không phải định danh hợp lệ (`isidentifier()` = False vì dấu `-`), dẫn tới
+> lỗi `attempted relative import with no known parent package`. Cách né: `cd` vào `tests/` trước
+> rồi chạy `pytest .` — khi đó pytest không còn lý do đi ngược lên thư mục cha có `__init__.py`.
 
 Lint/format: **TBD** — repo chưa setup `ruff`/`black`. Đề xuất thêm `ruff` (format + lint 1 tool)
 khi bắt đầu implement, nhưng không block spec này.

@@ -10,7 +10,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 **Checkpoint 0:** API đã verify, skeleton load được → review với user trước khi tiếp tục.
 
 ## Phase 1: Vertical slice — edit + save end-to-end
-- [ ] Task 4: Field filter render `{{edit:Field}}` → `<span data-ife-field contenteditable>`
+- [x] Task 4: Field filter render `{{edit:Field}}` → `<span data-ife-field contenteditable>`
 - [ ] Task 5: JS blur → `pycmd` → Python lưu vào note
 - [ ] Task 6: Xác nhận edit không ảnh hưởng scheduling/interval
 

@@ -89,7 +89,14 @@ ghi lại vào note thật.
 
 ### Phase 1: Vertical slice — 1 field edit + save hoạt động end-to-end
 
-- [ ] **Task 4: Field filter render `{{edit:Field}}` thành vùng editable**
+- [x] **Task 4: Field filter render `{{edit:Field}}` thành vùng editable** — DONE. Phát hiện +
+  fix 2 vấn đề ngoài dự kiến: (1) `anki.hooks` bị circular import nếu import trước
+  `anki.collection` — fix bằng cách import `anki.collection` trước trong `__init__.py`; (2)
+  pytest không collect được `pytest inline-field-editor/tests` như SPEC.md ghi ban đầu vì thư
+  mục add-on có dấu gạch ngang (không phải Python identifier hợp lệ) — SPEC.md đã cập nhật lệnh
+  đúng (`cd inline-field-editor/tests && pytest .`). Verify thêm bằng cách giả lập chính xác cơ
+  chế `importlib.import_module()` mà Anki dùng để load add-on qua `addons21/` — load sạch, field
+  filter đăng ký đúng (không chỉ dựa vào pytest, có test độc lập ngoài suite).
   - **Description:** Đăng ký field filter (theo API đã verify ở Task 2) xử lý cú pháp
     `edit:FieldName`, trả về `<span data-ife-field="FieldName" contenteditable="true"
     class="ife-editable">{content}</span>` thay vì render field thô.

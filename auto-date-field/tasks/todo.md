@@ -8,7 +8,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 **Checkpoint 0:** Skeleton load được, xác nhận bởi user.
 
 ## Phase 1: Core vertical slice — date logic + wiring
-- [ ] Task 2: `date_fill.py` — `today_iso()` + `apply_date_if_empty()` (TDD, pytest)
+- [x] Task 2: `date_fill.py` — `today_iso()` + `apply_date_if_empty()` (TDD, pytest)
 - [ ] Task 3: `config.json` + wiring `__init__.py` (hook `add_cards_did_add_note`, update_note)
 
 **Checkpoint 1:** 3 case (field trống/có sẵn/không tồn tại) verify OK trong Anki thật → đạt Success Criteria.

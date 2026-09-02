@@ -52,15 +52,15 @@ trống. Không cần JS/webview (khác `inline-field-editor`), thuần Python +
 
 ### Phase 1: Core vertical slice — date logic + wiring
 
-- [ ] **Task 2: `date_fill.py` — logic thuần (TDD)**
+- [x] **Task 2: `date_fill.py` — logic thuần (TDD)** — DONE, 5/5 test pass.
   - **Description:** Viết `today_iso(today: date | None) -> str` và
     `apply_date_if_empty(note, field_name, date_str) -> bool` theo đúng snippet trong
     SPEC.md → Code Style.
   - **Acceptance criteria:**
     - [ ] `today_iso()` trả đúng format `yyyy-mm-dd` với `today` truyền vào tường minh.
-    - [ ] `apply_date_if_empty()`: field trống → set + return True; field có nội dung (kể cả
-      chỉ có khoảng trắng) → không đổi + return False; field không tồn tại trong note →
-      không đổi + return False.
+    - [ ] `apply_date_if_empty()`: field trống ("" hoặc chỉ chứa khoảng trắng, coi là trống sau
+      `.strip()`) → set + return True; field có nội dung thật (non-whitespace) → không đổi +
+      return False; field không tồn tại trong note → không đổi + return False.
   - **Verification:**
     - [ ] `pytest auto-date-field/tests` (chạy đúng cách — xem SPEC.md → Commands) pass 100%.
   - **Dependencies:** None (chạy song song Task 1 được — logic thuần không cần skeleton).

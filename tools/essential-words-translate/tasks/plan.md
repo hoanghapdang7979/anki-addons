@@ -181,14 +181,18 @@ chạy thử mẫu nhỏ và chạy full (tốn phí thật ~20-25 USD, cần ve
   - **Estimated scope:** XS
 
 ### Checkpoint: Trước khi chạy full — HARD GATE
-- [ ] User đã xác nhận rõ ràng (không phải suy luận từ ngữ cảnh) đồng ý chạy full, biết rõ sẽ
-  tốn phí thật (~20-25 USD ước tính, cần verify giá tại console.cloud.google.com/billing lúc
-  chạy vì giá có thể đổi).
-- [ ] **Tuyệt đối không tự động chạy Task 7 dưới `/build auto`** — kể cả khi toàn bộ plan này
-  được approve 1 lần ở đầu autonomous run, Task 7 vẫn cần 1 xác nhận RIÊNG, tách biệt, ngay
-  trước khi chạy — đúng nguyên tắc high-risk/irreversible-cost trong quy trình build.
+- [x] User đã xác nhận rõ ràng (không phải suy luận từ ngữ cảnh) đồng ý chạy full — đã verify
+  giá thật trước khi hỏi (không dùng số ước tính cũ): $20/1M ký tự, free tier 500K/tháng, chi
+  phí thực tế tính toán chính xác ~$12.16 cho phần còn lại sau dry-run.
+- [x] Không tự động chạy Task 7 dưới `/build auto` — đã dừng lại xin xác nhận riêng qua
+  AskUserQuestion, không suy luận từ approval plan tổng thể trước đó.
 
-- [ ] **Task 7: Chạy full translation job (TỐN PHÍ THẬT — cần xác nhận riêng)**
+- [x] **Task 7: Chạy full translation job (TỐN PHÍ THẬT — cần xác nhận riêng)** — DONE, ~$12.
+  **Sự cố thật đã gặp**: job crash ở 11,800/50,830 string với `PermissionError` khi ghi cache —
+  nguyên nhân: repo nằm trong OneDrive-synced Desktop, ghi file liên tục tốc độ cao bị OneDrive
+  khoá file tạm thời. Fix: thêm retry+backoff vào `cache_store.py._save()` (5 lần, có test riêng
+  mô phỏng lỗi). Resume từ cache đã lưu (11,975 entry, nhiều hơn log cuối cùng 1 chút) — **không
+  mất tiền đã trả cho phần đã dịch trước khi crash**, đúng chức năng cache được thiết kế cho.
   - **Description:** Chạy CLI không giới hạn (`--input ... --output
     output/essential-words-vi.json --credentials secrets/gcloud-key.json`), xử lý toàn bộ 51,452
     unique string. Có thể mất thời gian đáng kể (phụ thuộc rate limit API) — chạy
@@ -204,7 +208,15 @@ chạy thử mẫu nhỏ và chạy full (tốn phí thật ~20-25 USD, cần ve
   - **Files likely touched:** none (output vào `output/essential-words-vi.json`, gitignore)
   - **Estimated scope:** S (code không đổi gì so với Task 5, chỉ là 1 lần chạy job lớn)
 
-- [ ] **Task 8: Validate output đầy đủ**
+- [x] **Task 8: Validate output đầy đủ** — DONE. `validate_output.py` phát hiện 71 field còn
+  ký tự Hán ban đầu — điều tra sâu (không nhận kết quả bề mặt): 13 field là domain-tag ngắn
+  Google Translate nhất quán không dịch (`[计]`/`[自]`/...), ~57 field là trích dẫn thành ngữ
+  Trung có chủ đích trong etymology đã dịch (hợp lý, giống trích Latin), **1 lỗi dịch thật**
+  (`lick.trans[0]`, Google trả gần y nguyên bản gốc kể cả sau retry). User xác nhận chỉ fix lỗi
+  thật, chấp nhận 70 case còn lại — đã dịch tay `lick` (câu đơn giản, không cần gọi API), cập
+  nhật SPEC.md ghi rõ quyết định này để không ai hiểu nhầm là việc dở dang. `validate_output.py`
+  vẫn trả FAIL (exit 1) theo đúng tiêu chí chữ nghĩa — đây là hành vi đúng của script, không phải
+  bug cần sửa.
   - **Description:** Script kiểm tra: (a) số item đúng 3600, (b) không còn ký tự Hán nào sót lại
     trong các field đã liệt kê phải dịch (quét unicode range `一`-`鿿`), (c) mọi field
     tiếng Anh giữ nguyên y hệt file gốc (diff từng field), (d) file gốc trong Downloads không đổi

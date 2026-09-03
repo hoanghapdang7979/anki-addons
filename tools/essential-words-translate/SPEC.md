@@ -165,14 +165,32 @@ def rebuild_json(
 
 ## Success Criteria
 
-- File output JSON có đúng 3600 item, cấu trúc/key giống hệt file gốc.
-- Mọi field tiếng Trung đã liệt kê (`trans.cn`, `sentences.cn`, `phrases.cn`, `synos.cn`,
-  `relWords.rels[].words[].cn`, `etymology.d`, phần tiếng Trung trong `etymology.t`) chứa tiếng
-  Việt, không còn ký tự Hán nào sót lại (verify bằng script quét unicode range).
-- Mọi field tiếng Anh giữ nguyên 100% so với file gốc (diff bằng script, không chỉ nhìn mắt).
-- File gốc trong `Downloads/` không có thay đổi gì (checksum trước/sau giống nhau).
-- `pytest tools/essential-words-translate/tests` (chạy đúng cách, cùng lưu ý về tên thư mục có
-  dấu gạch — dù ở đây không bắt buộc vì không phải Anki add-on, nhưng để nhất quán) pass 100%.
+- File output JSON có đúng 3600 item, cấu trúc/key giống hệt file gốc. ✅ Đạt (Task 8).
+- Mọi field tiếng Trung đã liệt kê chứa tiếng Việt, không còn ký tự Hán nào sót lại (verify bằng
+  script quét unicode range). **Đạt gần như hoàn toàn, có ngoại lệ đã được user chấp nhận tường
+  minh** (xem "Kết quả thực tế" bên dưới) — không phải oversight, không cần fix thêm.
+- Mọi field tiếng Anh giữ nguyên 100% so với file gốc (diff bằng script). ✅ Đạt (Task 8).
+- File gốc trong `Downloads/` không có thay đổi gì (checksum trước/sau giống nhau). ✅ Đạt.
+- `pytest tools/essential-words-translate/tests` pass 100%. ✅ Đạt (36/36).
+
+### Kết quả thực tế (Task 8 — validate)
+
+`validate_output.py` báo **70/51,005 unique string vẫn còn ký tự Hán** sau khi chạy full — đã
+điều tra kỹ và phân loại, user xác nhận chấp nhận, không coi là lỗi cần fix thêm:
+
+- **13 field**: tag chuyên ngành ngắn dạng `[计]`/`[自]`/`[建]`/`[流]`/`[仪]`/`[宝]`/`[交]` trong
+  `synos.cn` — Google Translate nhất quán không dịch các tag ngoặc vuông 1 ký tự này.
+- **~57 field**: thành ngữ/từ tiếng Trung được trích dẫn có chủ đích trong đoạn `etymology.d` đã
+  dịch tiếng Việt (giống trích Latin trong từ điển từ nguyên tiếng Anh) — hành vi hợp lý của
+  Google Translate, không phải lỗi.
+- **1 lỗi dịch thật đã fix thủ công**: `lick.trans[0].cn` — Google Translate trả về gần như y
+  nguyên bản gốc (kể cả sau khi retry, không phải lỗi thoáng qua) → dịch tay trực tiếp (câu định
+  nghĩa từ điển đơn giản), cập nhật vào cache, không tốn thêm phí API.
+
+`validate_output.py` vẫn trả exit code 1 (FAIL theo tiêu chí chữ nghĩa "0 ký tự Hán") — đây là
+hành vi ĐÚNG của script (báo cáo sự thật khách quan), không phải bug. Quyết định chấp nhận 70
+field còn lại là quyết định sản phẩm của user, ghi lại ở đây để người đọc sau không hiểu nhầm là
+việc chưa xong.
 
 ## Open Questions
 

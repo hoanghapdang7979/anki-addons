@@ -25,7 +25,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 **🛑 HARD GATE — không tự động chạy tiếp dưới `/build auto`:** cần user xác nhận RIÊNG, rõ ràng
 bằng lời, đồng ý tốn phí thật trước khi sang Task 7.
 
-- [ ] Task 7: Chạy full translation job (**TỐN PHÍ THẬT** ~20-25 USD ước tính, verify giá lại trước khi chạy)
-- [ ] Task 8: Validate output đầy đủ (đếm item, quét ký tự Hán sót, diff field tiếng Anh, checksum file gốc)
+- [x] Task 7: Chạy full translation job (thực tế ~$12.16, user xác nhận riêng trước khi chạy — job crash giữa chừng do OneDrive khoá file cache, đã fix retry + resume thành công)
+- [x] Task 8: Validate output đầy đủ (đếm item, quét ký tự Hán sót, diff field tiếng Anh, checksum file gốc) — 70/51005 string còn ký tự Hán, đã điều tra + user chấp nhận (xem SPEC.md)
 
 **Checkpoint cuối:** Toàn bộ Success Criteria trong [SPEC.md](../SPEC.md) đạt, chỉ commit code (không commit `output/`/`cache/`/`secrets/`).

@@ -31,6 +31,10 @@ htmlcov/
 *.key
 secrets/
 
+# tools/essential-words-translate — generated output, not source
+tools/essential-words-translate/output/
+tools/essential-words-translate/cache/
+
 # IDE
 .idea/
 *.iml

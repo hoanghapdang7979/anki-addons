@@ -19,7 +19,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 **Checkpoint 2:** API wrapper verify OK, cache module test kỹ khả năng resume.
 
 ## Phase 3: CLI + chạy thật
-- [ ] Task 5: `translate.py` — CLI ghép toàn bộ pipeline
+- [x] Task 5: `translate.py` — CLI ghép toàn bộ pipeline
 - [ ] Task 6: Chạy thử `--limit 10` với API thật, user tự đọc + xác nhận chất lượng
 
 **🛑 HARD GATE — không tự động chạy tiếp dưới `/build auto`:** cần user xác nhận RIÊNG, rõ ràng

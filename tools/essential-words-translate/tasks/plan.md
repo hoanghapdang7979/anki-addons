@@ -134,7 +134,13 @@ chạy thử mẫu nhỏ và chạy full (tốn phí thật ~20-25 USD, cần ve
 
 ### Phase 3: CLI + chạy thật (có cổng chặn rõ ràng giữa thử và full)
 
-- [ ] **Task 5: `translate.py` — CLI orchestration**
+- [x] **Task 5: `translate.py` — CLI orchestration** — DONE, 6 test tích hợp mock hoàn toàn +
+  6 test cho `gcloud_client.translate_chunks` (hàm mới, thêm khi làm task này). Phát hiện lúc
+  implement: `translate_batch()` (Task 3) trả kết quả 1 lần sau khi dịch xong TOÀN BỘ input —
+  nếu gọi thẳng với hàng chục nghìn string, lỗi ở batch giữa chừng sẽ làm mất các batch trước đó
+  chưa kịp cache. Thêm `translate_chunks()` cạnh nó (không sửa `translate_batch()` đã test/commit
+  — giờ nó chỉ là wrapper gọi `translate_chunks()` không callback), cho phép `translate.py`
+  checkpoint cache sau MỖI chunk qua callback `on_chunk_done`.
   - **Description:** Ghép `translator.py` + `gcloud_client.py` + `cache_store.py` thành CLI:
     đọc input JSON → extract unique string cần dịch → check cache → dịch phần chưa cache (qua
     `gcloud_client.translate_batch`, batch theo giới hạn API) → cập nhật cache → `rebuild_json`

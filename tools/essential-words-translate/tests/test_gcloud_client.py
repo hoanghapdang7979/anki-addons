@@ -100,3 +100,63 @@ def test_chunk_by_budget_respects_max_chars():
 
     assert all(sum(len(s) for s in c) <= 4500 for c in chunks)
     assert sum(len(c) for c in chunks) == 10
+
+
+@patch("gcloud_client.translate.Client")
+def test_translate_chunks_calls_on_chunk_done_after_each_internal_batch(mock_client_cls):
+    client = MagicMock()
+    client.translate.side_effect = lambda values, **kw: [
+        {"translatedText": f"VI-{v}"} for v in values
+    ]
+    mock_client_cls.from_service_account_json.return_value = client
+
+    strings = [f"word{i}" for i in range(150)]  # exceeds MAX_BATCH_COUNT (100) -> 2+ chunks
+    chunk_calls = []
+
+    result = gcloud_client.translate_chunks(
+        strings, "fake-creds.json", on_chunk_done=lambda o, t: chunk_calls.append((o, t))
+    )
+
+    assert result == [f"VI-word{i}" for i in range(150)]
+    assert len(chunk_calls) >= 2  # on_chunk_done fired per internal chunk, not once at the end
+    # every (originals, translations) pair reported must be consistent with each other
+    for originals, translations in chunk_calls:
+        assert translations == [f"VI-{o}" for o in originals]
+    # and the reported chunks together cover every input exactly once
+    all_reported = [o for originals, _ in chunk_calls for o in originals]
+    assert all_reported == strings
+
+
+@patch("gcloud_client.translate.Client")
+def test_translate_chunks_reports_earlier_chunks_even_if_a_later_one_fails(mock_client_cls):
+    client = MagicMock()
+
+    def flaky(values, **kw):
+        # The second chunk (starting at word100) fails on every retry
+        # attempt, not just once - exhausting MAX_RETRIES for that chunk
+        # specifically, regardless of how many times it's called.
+        if values[0] == "word100":
+            raise ConnectionError("second chunk fails for good")
+        return [{"translatedText": f"VI-{v}"} for v in values]
+
+    client.translate.side_effect = flaky
+    mock_client_cls.from_service_account_json.return_value = client
+
+    strings = [f"word{i}" for i in range(250)]  # -> 3 chunks of <=100
+    chunk_calls = []
+
+    with patch("gcloud_client.time.sleep"), pytest.raises(RuntimeError):
+        gcloud_client.translate_chunks(
+            strings, "fake-creds.json", on_chunk_done=lambda o, t: chunk_calls.append((o, t))
+        )
+
+    # the first chunk's callback must have fired before the second chunk blew up
+    assert len(chunk_calls) == 1
+
+
+@patch("gcloud_client.translate.Client")
+def test_translate_chunks_returns_empty_list_for_empty_input(mock_client_cls):
+    result = gcloud_client.translate_chunks([], "fake-creds.json")
+
+    assert result == []
+    mock_client_cls.from_service_account_json.assert_not_called()

@@ -7,7 +7,7 @@ access or real credentials (tests here mock gcloud_client.translate.Client).
 
 import logging
 import time
-from typing import Iterator
+from typing import Callable, Iterator
 
 from google.cloud import translate_v2 as translate
 
@@ -48,10 +48,28 @@ def _chunk_by_budget(
 def translate_batch(strings: list[str], credentials_path: str) -> list[str]:
     """Translate every string in `strings` from Chinese to Vietnamese.
 
-    Returns translations in the same order as the input. Retries transient
-    failures (network, rate limit) with backoff; a batch that still fails
-    after MAX_RETRIES raises RuntimeError, so the caller's cache checkpoint
-    keeps everything translated so far instead of silently losing entries.
+    Returns translations in the same order as the input. Convenience
+    wrapper around translate_chunks() for small inputs (e.g. the manual
+    "translate 2 strings" smoke test) where no per-chunk checkpointing is
+    needed - for large jobs, translate.py calls translate_chunks() directly
+    with on_chunk_done to persist a resumable cache.
+    """
+    return translate_chunks(strings, credentials_path)
+
+
+def translate_chunks(
+    strings: list[str],
+    credentials_path: str,
+    on_chunk_done: Callable[[list[str], list[str]], None] | None = None,
+) -> list[str]:
+    """Translate `strings`, calling on_chunk_done(originals, translations)
+    after each internal chunk succeeds.
+
+    Retries transient failures (network, rate limit) with backoff within a
+    chunk; a chunk that still fails after MAX_RETRIES raises RuntimeError -
+    on_chunk_done will already have fired for every earlier chunk, so the
+    caller's cache checkpoint keeps everything translated so far instead of
+    silently losing entries.
     """
     if not strings:
         return []
@@ -60,7 +78,10 @@ def translate_batch(strings: list[str], credentials_path: str) -> list[str]:
     results: list[str] = []
 
     for batch in _chunk_by_budget(strings, MAX_BATCH_COUNT, MAX_BATCH_CHARS):
-        results.extend(_translate_one_batch(client, batch))
+        translated = _translate_one_batch(client, batch)
+        results.extend(translated)
+        if on_chunk_done is not None:
+            on_chunk_done(batch, translated)
 
     return results
 

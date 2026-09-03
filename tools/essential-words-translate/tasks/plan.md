@@ -57,7 +57,9 @@ chạy thử mẫu nhỏ và chạy full (tốn phí thật ~20-25 USD, cần ve
 
 ### Phase 1: Core logic (pure, TDD — không cần credentials)
 
-- [ ] **Task 2: `translator.py` — extract + rebuild logic (TDD)**
+- [x] **Task 2: `translator.py` — extract + rebuild logic (TDD)** — DONE, 9/9 test pass ngay
+  lần đầu. Thiết kế dùng chung 1 hàm `_collect_slots()` (danh sách cặp chuỗi-gốc + setter) cho
+  cả extract và rebuild, tránh 2 hàm phải tự đi bộ cây JSON riêng rồi dễ lệch thứ tự với nhau.
   - **Description:** Viết `extract_translatable_strings(data) -> list[str]` và
     `rebuild_json(data, translate_fn) -> list[dict]` theo đúng snippet trong SPEC.md → Code
     Style. Xử lý đúng case đặc biệt `etymology[].t` (chỉ dịch phần sau `:` nếu có ký tự Hán, giữ

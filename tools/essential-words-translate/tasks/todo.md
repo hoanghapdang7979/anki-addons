@@ -8,7 +8,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 **Checkpoint 0:** Credentials xác nhận hoạt động.
 
 ## Phase 1: Core logic (pure, TDD)
-- [ ] Task 2: `translator.py` — `extract_translatable_strings()` + `rebuild_json()` (đặc biệt case `etymology.t`)
+- [x] Task 2: `translator.py` — `extract_translatable_strings()` + `rebuild_json()` (đặc biệt case `etymology.t`)
 
 **Checkpoint 1:** Logic extract/rebuild test kỹ, nhất là `etymology.t`.
 

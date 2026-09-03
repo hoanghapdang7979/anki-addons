@@ -1,4 +1,7 @@
 import json
+from pathlib import Path
+
+import pytest
 
 from cache_store import CacheStore
 
@@ -86,3 +89,41 @@ def test_missing_excludes_strings_added_by_a_previous_update_call(tmp_path):
     result = store.missing(["你好", "谢谢"])
 
     assert result == ["谢谢"]
+
+
+def test_save_retries_on_transient_permission_error(tmp_path, monkeypatch):
+    # Reproduces a real failure hit during the full translation run: Windows
+    # (with the cache file under a OneDrive-synced Desktop folder) can
+    # transiently deny os.replace() while a sync client briefly locks the
+    # target file. Must retry instead of losing the whole job.
+    cache_path = tmp_path / "cache.json"
+    store = CacheStore(cache_path)
+    original_replace = Path.replace
+    call_count = {"n": 0}
+
+    def flaky_replace(self, target):
+        call_count["n"] += 1
+        if call_count["n"] < 3:
+            raise PermissionError("simulated transient lock (e.g. OneDrive sync)")
+        return original_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", flaky_replace)
+
+    store.update({"你好": "Xin chào"})  # must not raise
+
+    assert call_count["n"] == 3
+    reloaded = CacheStore(cache_path)
+    assert reloaded.get("你好") == "Xin chào"
+
+
+def test_save_raises_after_persistent_permission_error(tmp_path, monkeypatch):
+    cache_path = tmp_path / "cache.json"
+    store = CacheStore(cache_path)
+
+    def always_fail_replace(self, target):
+        raise PermissionError("persistent lock")
+
+    monkeypatch.setattr(Path, "replace", always_fail_replace)
+
+    with pytest.raises(PermissionError):
+        store.update({"你好": "Xin chào"})

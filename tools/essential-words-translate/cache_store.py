@@ -7,7 +7,11 @@ strings already done.
 """
 
 import json
+import time
 from pathlib import Path
+
+_SAVE_MAX_RETRIES = 5
+_SAVE_RETRY_DELAY_SECONDS = 0.2
 
 
 class CacheStore:
@@ -50,4 +54,19 @@ class CacheStore:
         tmp_path = self._path.with_suffix(self._path.suffix + ".tmp")
         with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(self._data, f, ensure_ascii=False, indent=2)
-        tmp_path.replace(self._path)  # avoid a half-written cache file on crash mid-write
+
+        # tmp_path.replace(self._path) is meant to be atomic, but on Windows
+        # it can transiently raise PermissionError if something else (a
+        # sync client like OneDrive watching a Desktop folder, an antivirus
+        # scanner) briefly has the target file open - retry rather than
+        # losing the whole translation job over a momentary lock.
+        last_error: OSError | None = None
+        for attempt in range(1, _SAVE_MAX_RETRIES + 1):
+            try:
+                tmp_path.replace(self._path)
+                return
+            except OSError as exc:
+                last_error = exc
+                if attempt < _SAVE_MAX_RETRIES:
+                    time.sleep(_SAVE_RETRY_DELAY_SECONDS * attempt)
+        raise last_error

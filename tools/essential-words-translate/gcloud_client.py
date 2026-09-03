@@ -91,7 +91,10 @@ def _translate_one_batch(client, batch: list[str]) -> list[str]:
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             response = client.translate(
-                batch, target_language=TARGET_LANGUAGE, source_language=SOURCE_LANGUAGE
+                batch,
+                target_language=TARGET_LANGUAGE,
+                source_language=SOURCE_LANGUAGE,
+                format_="text",
             )
             return [r["translatedText"] for r in response]
         except Exception as exc:  # network/API errors - retry with backoff

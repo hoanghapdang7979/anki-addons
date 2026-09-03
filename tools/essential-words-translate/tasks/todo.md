@@ -20,7 +20,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 
 ## Phase 3: CLI + chạy thật
 - [x] Task 5: `translate.py` — CLI ghép toàn bộ pipeline
-- [ ] Task 6: Chạy thử `--limit 10` với API thật, user tự đọc + xác nhận chất lượng
+- [x] Task 6: Chạy thử `--limit 10` với API thật, user tự đọc + xác nhận chất lượng
 
 **🛑 HARD GATE — không tự động chạy tiếp dưới `/build auto`:** cần user xác nhận RIÊNG, rõ ràng
 bằng lời, đồng ý tốn phí thật trước khi sang Task 7.

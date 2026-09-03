@@ -6,7 +6,7 @@ import gcloud_client
 
 
 def _fake_translate(translated_map):
-    def fake(values, target_language=None, source_language=None):
+    def fake(values, **kw):
         return [{"translatedText": translated_map[v]} for v in values]
 
     return fake
@@ -26,6 +26,23 @@ def test_translate_batch_returns_translations_in_order(mock_client_cls):
 
 
 @patch("gcloud_client.translate.Client")
+def test_translate_batch_requests_plain_text_format(mock_client_cls):
+    # Regression test: format_ defaults to None in the client library, which
+    # makes the Google API itself default to "html" and HTML-entity-escape
+    # quotes etc. (found by inspecting real output during Task 6's manual
+    # review - e.g. a literal '"' came back as '&quot;'). Must pass
+    # format_="text" explicitly on every call.
+    client = MagicMock()
+    client.translate.side_effect = _fake_translate({"你好": "Xin chào"})
+    mock_client_cls.from_service_account_json.return_value = client
+
+    gcloud_client.translate_batch(["你好"], "fake-creds.json")
+
+    _, kwargs = client.translate.call_args
+    assert kwargs.get("format_") == "text"
+
+
+@patch("gcloud_client.translate.Client")
 def test_translate_batch_returns_empty_list_for_empty_input(mock_client_cls):
     result = gcloud_client.translate_batch([], "fake-creds.json")
 
@@ -39,7 +56,7 @@ def test_translate_batch_retries_on_transient_failure(mock_client_cls, mock_slee
     client = MagicMock()
     call_count = {"n": 0}
 
-    def flaky(values, target_language=None, source_language=None):
+    def flaky(values, **kw):
         call_count["n"] += 1
         if call_count["n"] < 2:
             raise ConnectionError("network blip")
@@ -73,7 +90,7 @@ def test_translate_batch_splits_large_input_into_multiple_requests(mock_client_c
     client = MagicMock()
     calls = []
 
-    def fake(values, target_language=None, source_language=None):
+    def fake(values, **kw):
         calls.append(list(values))
         return [{"translatedText": f"VI-{v}"} for v in values]
 

@@ -159,7 +159,13 @@ chạy thử mẫu nhỏ và chạy full (tốn phí thật ~20-25 USD, cần ve
   - **Files likely touched:** `tools/essential-words-translate/translate.py`
   - **Estimated scope:** M
 
-- [ ] **Task 6: Chạy thử `--limit 10` với API thật**
+- [x] **Task 6: Chạy thử `--limit 10` với API thật** — DONE. Phát hiện + fix 1 bug chất lượng
+  lúc review: dấu ngoặc kép trong bản dịch bị encode thành `&quot;` (Google API mặc định
+  `format="html"` khi không truyền `format_`) — thêm `format_="text"` tường minh trong
+  `gcloud_client.py` (có test regression riêng), xoá cache cũ dính lỗi, dịch lại 175 string
+  (chi phí không đáng kể). Output cuối: JSON hợp lệ, 10 item, bản dịch tự nhiên, field tiếng Anh
+  giữ nguyên 100%, `etymology.t` xử lý đúng cả 2 case. Cũng sửa log message gây hiểu lầm
+  ("already cached" gộp chung cả duplicate-trong-batch) — giờ tách rõ unique/duplicate.
   - **Description:** Chạy CLI thật với `--limit 10` (10 word entry ≈ vài trăm ký tự, chi phí gần
     như bằng 0), đọc thủ công output, đánh giá chất lượng bản dịch.
   - **Acceptance criteria:**

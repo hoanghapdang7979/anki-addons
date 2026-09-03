@@ -58,13 +58,18 @@ def run(
         logger.info("Limiting to first %d word entries", limit)
 
     all_strings = extract_translatable_strings(data)
+    unique_strings = list(dict.fromkeys(all_strings))
     cache = CacheStore(cache_path)
     missing = cache.missing(all_strings)
+    already_cached = len(unique_strings) - len(missing)
     logger.info(
-        "%d translatable strings across %d entries - %d already cached, %d need translating",
+        "%d translatable strings (%d unique, %d duplicate) across %d entries "
+        "- %d already cached, %d need translating",
         len(all_strings),
+        len(unique_strings),
+        len(all_strings) - len(unique_strings),
         len(data),
-        len(all_strings) - len(missing),
+        already_cached,
         len(missing),
     )
 

@@ -108,7 +108,9 @@ chạy thử mẫu nhỏ và chạy full (tốn phí thật ~20-25 USD, cần ve
     `tools/essential-words-translate/tests/test_gcloud_client.py`
   - **Estimated scope:** S
 
-- [ ] **Task 4: Cache/checkpoint module**
+- [x] **Task 4: Cache/checkpoint module** — DONE, 8/8 test pass, bao gồm test khẳng định rõ
+  "update() trả về là dữ liệu đã nằm trên disk" (không đợi tới cuối job mới flush) — đúng yêu cầu
+  bảo vệ chi phí thật quan trọng nhất trong toàn bộ plan.
   - **Description:** Module quản lý cache dịch (string gốc → bản dịch), đọc/ghi ra file JSON
     trong `cache/`. Hàm nhận danh sách unique string cần dịch, trả về những string CHƯA có trong
     cache, sau khi dịch xong (dù chỉ 1 phần) thì ghi cache ngay — không đợi hết toàn bộ job.

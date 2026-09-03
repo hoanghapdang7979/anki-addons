@@ -87,7 +87,10 @@ chạy thử mẫu nhỏ và chạy full (tốn phí thật ~20-25 USD, cần ve
 
 ### Phase 2: API wrapper + cache (cần credentials thật cho phần verify, không cần cho unit test)
 
-- [ ] **Task 3: `gcloud_client.py` — wrapper gọi Google Cloud Translation API**
+- [x] **Task 3: `gcloud_client.py` — wrapper gọi Google Cloud Translation API** — DONE, 7 test
+  mock pass + verify tay 2 string với API thật ("你好","谢谢" → "Xin chào","Cảm ơn", đúng thứ
+  tự). Batch theo cả max-count (100) và max-chars (4500) để an toàn với giới hạn API thật (không
+  chốt cứng theo 1 con số duy nhất chưa verify).
   - **Description:** Hàm `translate_batch(strings: list[str], credentials_path: str) ->
     list[str]` — gọi Google Cloud Translation API (batch nhiều string/request theo giới hạn của
     API), có retry + backoff khi lỗi tạm thời (rate limit, network).

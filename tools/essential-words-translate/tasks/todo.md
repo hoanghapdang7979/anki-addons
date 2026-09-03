@@ -13,7 +13,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 **Checkpoint 1:** Logic extract/rebuild test kỹ, nhất là `etymology.t`.
 
 ## Phase 2: API wrapper + cache
-- [ ] Task 3: `gcloud_client.py` — `translate_batch()` (mock trong test, verify tay 2 string với API thật)
+- [x] Task 3: `gcloud_client.py` — `translate_batch()` (mock trong test, verify tay 2 string với API thật)
 - [ ] Task 4: `cache_store.py` — cache/checkpoint resumable
 
 **Checkpoint 2:** API wrapper verify OK, cache module test kỹ khả năng resume.

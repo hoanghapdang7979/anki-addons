@@ -8,7 +8,10 @@ work - see SPEC.md Boundaries.
 
 import html as html_lib
 
-from tree_parser import TreeNode
+try:
+    from .tree_parser import TreeNode  # real Anki: loaded as a package submodule
+except ImportError:
+    from tree_parser import TreeNode  # pytest: conftest.py puts this dir on sys.path
 
 _CSS = """
 .tcg-root { font-family: -apple-system, sans-serif; text-align: left; }

@@ -1,36 +1,33 @@
 import logging
 
-from aqt import gui_hooks, mw
-from aqt.qt import QApplication, QMimeData
+from aqt import gui_hooks
+
+from .dialog import TreeDialog
 
 logger = logging.getLogger(__name__)
 
-# TEMPORARY (Task 2 of tasks/plan.md): verifies QMimeData.setHtml() actually
-# pastes as rendered HTML into Anki's current NewEditor, not as escaped
-# plain text. This is the highest-risk unverified assumption in SPEC.md -
-# checking it before writing the real parser/renderer/dialog. Remove this
-# button once Task 5 replaces it with the real "Tree Card" button.
-_TEST_HTML = "<b>test bold</b><br><span style='color:red'>red text</span>"
+# Kept alive here so Qt doesn't garbage-collect the dialog while it's open
+# (PyQt does not keep a Python-side reference alive on its own).
+_dialog_instance: TreeDialog | None = None
 
 
-def _on_test_clipboard_button(editor) -> None:
-    mime = QMimeData()
-    mime.setHtml(_TEST_HTML)
-    QApplication.clipboard().setMimeData(mime)
-    logger.info("Copied test HTML to clipboard via QMimeData.setHtml()")
+def _open_tree_dialog(editor) -> None:
+    global _dialog_instance
+    _dialog_instance = TreeDialog(editor.parentWindow)
+    _dialog_instance.show()
 
 
-def _add_test_clipboard_button(buttons: list[str], editor) -> None:
+def _add_tree_card_button(buttons: list[str], editor) -> None:
     button = editor.addButton(
         None,
-        "test_clipboard_html",
-        _on_test_clipboard_button,
-        tip="[TEMP Task 2] Copy test HTML to clipboard",
-        label="TestClipHTML",
+        "tree_card_generator",
+        _open_tree_dialog,
+        tip="Tree Card Generator - paste ASCII tree, generate collapsible HTML",
+        label="Tree Card",
     )
     buttons.append(button)
 
 
-gui_hooks.editor_did_init_buttons.append(_add_test_clipboard_button)
+gui_hooks.editor_did_init_buttons.append(_add_tree_card_button)
 
 logger.info("Tree Card Generator loaded")

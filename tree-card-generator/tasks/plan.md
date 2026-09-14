@@ -127,7 +127,17 @@ sớm nhất có thể (Task 2) trước khi đầu tư code parser/renderer, v�
 
 ### Phase 2: UI wiring — dialog thật + copy clipboard
 
-- [ ] **Task 5: `dialog.py` + wiring `__init__.py` — dialog thật, thay đoạn test tạm ở Task 2**
+- [~] **Task 5: `dialog.py` + wiring `__init__.py` — dialog thật, thay đoạn test tạm ở Task 2**
+  — Code xong, đã fix 1 bug thật user phát hiện (xem bên dưới), đang chờ user re-test.
+  **Bug tìm được + bài học quan trọng:** `tree_renderer.py` dùng import tuyệt đối
+  `from tree_parser import TreeNode` thay vì tương đối `.tree_parser` — vỡ khi Anki thật load add-on
+  dưới dạng package (đúng traceback `ModuleNotFoundError: No module named 'tree_parser'` khi mở
+  Add Cards). Fix bằng try/except (relative trước, absolute fallback cho pytest). **Quan trọng
+  hơn:** lần pre-verify TRƯỚC đó của tôi (`importlib.import_module` giả lập) đã **KHÔNG bắt được
+  bug này** vì tôi chạy lệnh Python từ ngay trong thư mục `tree-card-generator/` — Python tự thêm
+  cwd vào `sys.path` (entry `''`), vô tình làm `tree_parser` import được như top-level module,
+  che mất lỗi thật. Từ nay **luôn chạy pre-verify simulation từ thư mục gốc repo** (cwd trung
+  lập), không phải từ trong thư mục add-on, để không lặp lại false-positive này.
   - **Description:** `QDialog` với `QPlainTextEdit` (nhập text tree) + `QPushButton` "Generate &
     Copy". Bấm Generate: `parse_tree()` → `render_html()` → copy vào clipboard qua cơ chế đã
     verify ở Task 2 (không phải đoạn test cố định nữa, mà HTML thật từ renderer). `__init__.py`

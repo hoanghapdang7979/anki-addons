@@ -10,7 +10,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 
 ## Phase 1: Core logic — parser + renderer (pure, TDD)
 - [x] Task 3: `tree_parser.py` — `parse_tree()` (test cả case nhỏ lẫn cây mẫu đầy đủ từ SPEC.md)
-- [ ] Task 4: `tree_renderer.py` — `render_html()` (escape HTML, toggle collapsible, tự chứa CSS+JS)
+- [x] Task 4: `tree_renderer.py` — `render_html()` (escape HTML, toggle collapsible, tự chứa CSS+JS)
 
 **Checkpoint 1:** `pytest` pass 100%, parser+renderer test kỹ với cây mẫu thật.
 

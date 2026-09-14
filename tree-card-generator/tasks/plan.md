@@ -93,7 +93,12 @@ sớm nhất có thể (Task 2) trước khi đầu tư code parser/renderer, v�
     `tree-card-generator/tests/conftest.py`, `tree-card-generator/tests/test_tree_parser.py`
   - **Estimated scope:** M
 
-- [ ] **Task 4: `tree_renderer.py` — `render_html()` (TDD)**
+- [x] **Task 4: `tree_renderer.py` — `render_html()` (TDD)** — DONE, 9/9 test mới pass (20/20
+  tổng). 2 test ban đầu fail vì bug trong chính TEST (CSS tĩnh luôn chứa selector `.tcg-node`/
+  `.tcg-timestamp` nên assert "not in toàn bộ output" sai — sửa lại chỉ check phần body trước
+  `<style>`). Cũng gặp 1 lần nghi ngờ encoding sai cho ký tự "–"/"▸"/"▾" do console Windows hiện
+  `�` — verify lại bằng cách ghi UTF-8 ra file, xác nhận dữ liệu đúng, chỉ là lỗi hiển thị quen
+  thuộc của phiên này, không phải bug thật.
   - **Description:** Render `TreeNode` thành HTML tự chứa: node có `children` → section có
     tiêu đề clickable (JS toggle class ẩn/hiện container con) + mặc định thu gọn (xem SPEC.md Open
     Question #1 — giả định collapsed); node lá → bullet đơn giản. Escape HTML entities cho mọi

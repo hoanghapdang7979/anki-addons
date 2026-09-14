@@ -7,9 +7,25 @@
 
 Dán 1 đoạn text dạng cây ASCII (dùng ký tự `├──`/`│`/`└──` để thể hiện cấp bậc, mỗi dòng có thể
 có tiền tố `[hh:mm:ss]`) vào 1 popup dialog trong Editor của Anki, bấm **Generate** → add-on parse
-cây và tạo ra 1 khối HTML **tự chứa** (nhúng sẵn CSS + JS, không cần setup Card Template riêng)
+cây và tạo ra 1 khối HTML **tự chứa** (chỉ dùng inline `style="..."` + `<details>`/`<summary>`
+thuần HTML5, **không** `<style>`/`<script>` — xem lý do ở mục "Đổi kiến trúc lúc build" bên dưới)
 hiển thị dạng cây có thể bấm mở/thu gọn từng nhánh — copy thẳng vào clipboard (dạng rich HTML),
 user tự `Ctrl+V` dán vào field bất kỳ của note đang sửa.
+
+### ⚠️ Đổi kiến trúc lúc build (Task 5/6) — quan trọng, đọc trước khi sửa `tree_renderer.py`
+
+Spec ban đầu chọn **custom JS** cho việc mở/thu gọn (xem lịch sử hỏi ở `/spec`) và nhúng CSS
+trong 1 khối `<style>`. Test thật trong Anki (user paste thử) phát hiện: **Anki/Qt WebEngine
+strip bỏ hoàn toàn `<style>` và `<script>` khi paste rich-HTML vào field** — cấu trúc `<div>`
+sống sót nhưng mọi màu sắc/thụt lề/hành vi thu gọn đều mất, y hệt hiện tượng user báo cáo (dán
+ra "chỉvăn bản phẳng"). Đây là giới hạn thật của cơ chế paste, không phải bug sửa được bằng cách
+viết CSS/JS khác đi.
+
+**Đã đổi sang:** inline `style="..."` trên từng thẻ (không có khối `<style>` nào cả) + native
+`<details>`/`<summary>` HTML5 cho mở/thu gọn (không cần `<script>` nào cả — trình duyệt tự xử lý,
+mặc định thu gọn khi không có attribute `open`). Cả 2 thứ này **sống sót qua paste** vì paste-
+sanitizer không có lý do để strip attribute `style` hay thẻ ngữ nghĩa `<details>`. Mục "Code Style"
+và "Testing Strategy" bên dưới đã cập nhật theo kiến trúc mới này.
 
 **User:** chỉ Dang (cá nhân).
 
@@ -26,10 +42,10 @@ THE 7-11-4 BLUEPRINT & PHÁT TRIỂN BẢN THÂN (DANIEL PRIESTLEY)
     └── ...
 ```
 
-**Output:** dòng đầu tiên = tiêu đề gốc. Mỗi node **có node con** → render thành 1 section có thể
-bấm vào tiêu đề để mở/thu gọn (custom JS, không dùng `<details>` thuần — theo lựa chọn ở bước
-`/spec`). Node **không có con** (lá) → render thành 1 dòng bullet đơn giản. Node có tiền tố
-`[hh:mm:ss]` → tách riêng phần timestamp hiển thị như 1 nhãn nhỏ trước label.
+**Output:** dòng đầu tiên = tiêu đề gốc. Mỗi node **có node con** → render thành `<details>` +
+`<summary>` (bấm vào `<summary>` để mở/thu gọn — hành vi native của trình duyệt, không cần JS).
+Node **không có con** (lá) → render thành 1 dòng bullet đơn giản. Node có tiền tố `[hh:mm:ss]` →
+tách riêng phần timestamp hiển thị như 1 nhãn nhỏ trước label.
 
 **Không tự động chèn vào field** — ban đầu định làm thế nhưng phát hiện cơ chế chèn HTML vào
 field đang focus của Editor dựa trên API đã bị đánh dấu **deprecated**
@@ -87,8 +103,8 @@ tree-card-generator/
   dialog.py                  # QDialog UI (PyQt6) — nhập text, bấm Generate, copy clipboard.
                              #   Không unit test (UI code) — verify tay trong Anki thật.
   tree_parser.py              # parse_tree(text: str) -> TreeNode — logic thuần
-  tree_renderer.py             # render_html(root: TreeNode) -> str — logic thuần, output tự
-                             #   chứa <style>/<script>
+  tree_renderer.py             # render_html(root: TreeNode) -> str — logic thuần, chỉ dùng
+                             #   inline style="..." + <details>/<summary>, KHÔNG <style>/<script>
   tests/
     conftest.py
     test_tree_parser.py
@@ -116,9 +132,10 @@ def parse_tree(text: str) -> TreeNode:
 
 
 def render_html(root: TreeNode) -> str:
-    """Render a TreeNode into a self-contained HTML block (inline <style>
-    and <script>, no external dependencies) - a node with children becomes
-    a clickable collapsible section, a leaf node becomes a plain bullet.
+    """Render a TreeNode using only inline style="..." attributes and
+    native <details>/<summary> (no <style>/<script> - see "Đổi kiến trúc
+    lúc build" in Objective) - a node with children becomes a
+    <details>/<summary> pair, a leaf node becomes a plain bullet.
     """
     ...
 ```
@@ -140,10 +157,10 @@ def render_html(root: TreeNode) -> str:
     cuối dùng `└──` vs node giữa dùng `├──` cho ra cùng cấu trúc cha-con đúng, tách timestamp
     `[00:03:04]` đúng, label không có timestamp giữ nguyên, label chứa `<`/`&` được giữ nguyên ở
     bước parse (escape làm ở bước render, không phải parse).
-  - `render_html()`: node có con → có phần tử clickable + container con (mặc định thu gọn — xem
-    Open Questions #1); node lá → render bullet, không có nút toggle; label chứa `<script>` hay
-    `&` → escape đúng trong output; output chứa đúng 1 khối `<style>` và 1 khối `<script>` tự
-    chứa, không phụ thuộc file ngoài.
+  - `render_html()`: node có con → render thành `<details>`/`<summary>` (mặc định thu gọn — không
+    có attribute `open`, hành vi native, không cần class/JS riêng); node lá → render bullet,
+    không có `<details>`; label chứa `<script>` hay `&` → escape đúng trong output; output
+    **không chứa** `<style>`/`<script>`/`onclick` nào — chỉ inline `style="..."`.
 - **Không unit test `dialog.py`** (UI code, cần Qt event loop) — verify tay: mở Anki, bấm nút,
   dán text mẫu, bấm Generate, dán (Ctrl+V) vào 1 field, xác nhận hiển thị + click mở/đóng đúng.
 
@@ -152,8 +169,9 @@ def render_html(root: TreeNode) -> str:
 - **Luôn làm:**
   - Escape HTML entities trong mọi label trước khi render — không bao giờ nhúng text thô của
     user thẳng vào HTML output.
-  - HTML output phải tự chứa hoàn toàn (`<style>` + `<script>` nhúng sẵn) — dán được vào field
-    của bất kỳ note type nào mà không cần setup Card Template riêng.
+  - HTML output phải tự chứa hoàn toàn bằng inline `style="..."` + `<details>`/`<summary>` —
+    **không** dùng `<style>`/`<script>` (bị Anki strip khi paste, xem "Đổi kiến trúc lúc build")
+    — dán được vào field của bất kỳ note type nào mà không cần setup Card Template riêng.
   - Copy vào clipboard dạng rich-HTML (`QMimeData.setHtml()`), không phải plain text escaped —
     nếu không, dán vào Anki sẽ ra text thô `<div>...` thay vì render đẹp.
 - **Hỏi trước:**
@@ -168,6 +186,8 @@ def render_html(root: TreeNode) -> str:
   - Tự ý đọc/sửa note hiện tại trong Editor ngoài việc user tự dán bằng tay.
   - Nhúng JS/CSS phụ thuộc thư viện ngoài (CDN, npm package) — giữ tự chứa 100%, không cần
     internet để hiển thị đúng.
+  - Dùng `<style>` hoặc `<script>` dưới bất kỳ hình thức nào trong `render_html()` — đã xác nhận
+    thật (không phải giả định) là bị Anki strip khi paste, xem "Đổi kiến trúc lúc build".
 
 ## Success Criteria
 

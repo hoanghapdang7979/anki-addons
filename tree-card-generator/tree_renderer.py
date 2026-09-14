@@ -1,9 +1,15 @@
 """Pure logic for rendering a TreeNode into a self-contained HTML block.
 
 No aqt import here - keep this module testable without a running Anki
-instance. The output embeds its own <style> and <script> (no external
-files/CDN) so it can be pasted into a field on any note type and just
-work - see SPEC.md Boundaries.
+instance. Deliberately uses ONLY inline style="..." attributes and native
+<details>/<summary> for expand/collapse - NOT a <style> block or <script>.
+
+Real-world finding (see tasks/plan.md Task 5/6): Anki's paste sanitization
+strips <style> and <script> tags entirely when pasting rich HTML into a
+field, so a self-contained block relying on either loses all
+styling/behavior the moment a user pastes it. Inline style attributes and
+plain <details>/<summary> (native browser expand/collapse, no JS needed)
+are what actually survive.
 """
 
 import html as html_lib
@@ -13,70 +19,61 @@ try:
 except ImportError:
     from tree_parser import TreeNode  # pytest: conftest.py puts this dir on sys.path
 
-_CSS = """
-.tcg-root { font-family: -apple-system, sans-serif; text-align: left; }
-.tcg-title { font-weight: 700; font-size: 1.1em; margin-bottom: 0.5em; }
-.tcg-node { margin: 0.2em 0; }
-.tcg-header { cursor: pointer; user-select: none; padding: 0.15em 0; }
-.tcg-arrow { display: inline-block; width: 1.2em; }
-.tcg-children { margin-left: 1.4em; }
-.tcg-children.tcg-collapsed { display: none; }
-.tcg-leaf { margin: 0.15em 0 0.15em 1.4em; }
-.tcg-bullet { display: inline-block; width: 1.2em; }
-.tcg-timestamp { color: #888; font-size: 0.9em; margin-right: 0.3em; }
-"""
+_INDENT_PX = 18
+# Alternating background per depth, purely for visual distinction between
+# nesting levels - inline so it survives paste.
+_PALETTE = ["#eef3fb", "#f7f2fa", "#ffffff"]
 
-_JS = """
-function tcgToggle(headerEl) {
-    var childrenEl = headerEl.nextElementSibling;
-    childrenEl.classList.toggle("tcg-collapsed");
-    var arrow = headerEl.querySelector(".tcg-arrow");
-    arrow.textContent = childrenEl.classList.contains("tcg-collapsed") ? "▸" : "▾";
-}
-"""
+
+def _indent_style(depth: int) -> str:
+    return f"margin-left:{(depth - 1) * _INDENT_PX}px;"
 
 
 def _timestamp_html(node: TreeNode) -> str:
     if not node.timestamp:
         return ""
-    return f'<span class="tcg-timestamp">[{html_lib.escape(node.timestamp)}]</span> '
+    ts = html_lib.escape(node.timestamp)
+    return f'<span style="color:#888;font-size:0.9em;margin-right:4px;">[{ts}]</span>'
 
 
 def _render_node(node: TreeNode, depth: int) -> str:
     label_html = _timestamp_html(node) + html_lib.escape(node.label)
 
     if node.children:
+        bg = _PALETTE[(depth - 1) % len(_PALETTE)]
+        summary_style = (
+            f"cursor:pointer;background:{bg};padding:4px 8px;"
+            f"border-radius:6px;{_indent_style(depth)}"
+        )
         children_html = "".join(_render_node(c, depth + 1) for c in node.children)
         return (
-            f'<div class="tcg-node tcg-depth-{depth}">'
-            f'<div class="tcg-header" onclick="tcgToggle(this)">'
-            f'<span class="tcg-arrow">▸</span>'
-            f'<span class="tcg-label">{label_html}</span>'
-            f"</div>"
-            f'<div class="tcg-children tcg-collapsed">{children_html}</div>'
-            f"</div>"
+            f'<details style="margin:2px 0;">'
+            f'<summary style="{summary_style}">{label_html}</summary>'
+            f"{children_html}"
+            f"</details>"
         )
 
+    leaf_style = f"margin:2px 0;padding:2px 8px;{_indent_style(depth)}"
     return (
-        f'<div class="tcg-leaf tcg-depth-{depth}">'
-        f'<span class="tcg-bullet">–</span>'
-        f'<span class="tcg-label">{label_html}</span>'
+        f'<div style="{leaf_style}">'
+        f'<span style="display:inline-block;width:1.2em;">–</span>'
+        f"{label_html}"
         f"</div>"
     )
 
 
 def render_html(root: TreeNode) -> str:
-    """Render a TreeNode into a self-contained HTML block (inline <style>
-    and <script>) - a node with children becomes a clickable collapsible
-    section (collapsed by default), a leaf node becomes a plain bullet.
+    """Render a TreeNode into HTML using only inline style="..." attributes
+    and native <details>/<summary> for expand/collapse (collapsed by
+    default - <details> without "open" is collapsed natively, no extra
+    markup needed). A node with children becomes a <details>/<summary>
+    pair, a leaf node becomes a plain bullet <div>.
     """
     body = "".join(_render_node(c, 1) for c in root.children)
     title = html_lib.escape(root.label)
     return (
-        f'<div class="tcg-root">'
-        f'<div class="tcg-title">{title}</div>'
+        f'<div style="font-family:-apple-system,sans-serif;text-align:left;">'
+        f'<div style="font-weight:700;font-size:1.1em;margin-bottom:6px;">{title}</div>'
         f"{body}"
         f"</div>"
-        f"<style>{_CSS}</style>"
-        f"<script>{_JS}</script>"
     )

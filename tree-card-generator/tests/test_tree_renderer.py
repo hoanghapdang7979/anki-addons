@@ -6,50 +6,55 @@ from tree_renderer import render_html
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
-def test_render_html_contains_exactly_one_style_and_script_block():
+def test_render_html_has_no_style_or_script_tags():
+    # Real-world finding (see tasks/plan.md Task 5/6): Anki's paste
+    # sanitization strips <style> and <script> blocks entirely when pasting
+    # rich HTML into a field, so relying on either makes the collapsible
+    # tree lose all styling/behavior once pasted. The renderer must not
+    # emit either - only inline style="..." attributes and native
+    # <details>/<summary> (no JS needed for expand/collapse).
     root = TreeNode(label="Root", children=[TreeNode(label="Leaf")])
 
     output = render_html(root)
 
-    assert output.count("<style>") == 1
-    assert output.count("</style>") == 1
-    assert output.count("<script>") == 1
-    assert output.count("</script>") == 1
+    assert "<style" not in output
+    assert "<script" not in output
+    assert "onclick" not in output
 
 
-def test_render_html_node_with_children_has_clickable_header_and_collapsed_container():
+def test_render_html_node_with_children_uses_details_summary():
     child = TreeNode(label="Child")
     parent = TreeNode(label="Parent", children=[child])
     root = TreeNode(label="Root", children=[parent])
 
     output = render_html(root)
 
-    assert 'onclick="tcgToggle(this)"' in output
-    assert 'class="tcg-children tcg-collapsed"' in output
+    assert "<details" in output
+    assert "<summary" in output
+    assert "Parent" in output
 
 
-def test_render_html_distinguishes_parent_wrapper_from_leaf_wrapper():
-    leaf = TreeNode(label="Leaf")
-    parent = TreeNode(label="Parent", children=[leaf])
+def test_render_html_details_is_collapsed_by_default():
+    # <details> without the "open" attribute is collapsed natively - no
+    # class/JS needed to achieve the default-collapsed requirement.
+    child = TreeNode(label="Child")
+    parent = TreeNode(label="Parent", children=[child])
     root = TreeNode(label="Root", children=[parent])
 
     output = render_html(root)
 
-    assert 'class="tcg-node' in output
-    assert 'class="tcg-leaf' in output
+    assert "<details open" not in output
+    assert "<details" in output  # sanity: a real <details> tag is actually present
 
 
-def test_render_html_leaf_only_tree_has_no_toggle_at_all():
+def test_render_html_leaf_only_tree_has_no_details_wrapper():
     root = TreeNode(label="Root", children=[TreeNode(label="Only Leaf")])
 
     output = render_html(root)
-    body = output.split("<style>")[0]  # the static CSS always mentions
-    # "tcg-node"/"tcg-timestamp" as selectors - only the body (the actual
-    # rendered markup) reflects whether this specific tree used them.
 
-    assert "tcg-leaf" in body
-    assert "onclick" not in body
-    assert "tcg-node" not in body
+    assert "Only Leaf" in output
+    assert "<details" not in output
+    assert "<summary" not in output
 
 
 def test_render_html_escapes_malicious_label():
@@ -79,23 +84,27 @@ def test_render_html_includes_timestamp_when_present():
     assert "Heading" in output
 
 
-def test_render_html_omits_timestamp_markup_when_absent():
-    root = TreeNode(label="Root", children=[TreeNode(label="No timestamp here")])
+def test_render_html_all_visible_styling_is_inline_not_in_a_stylesheet():
+    # Since there's no <style> block at all, any visual styling (colors,
+    # indentation) must come from inline style="..." attributes directly
+    # on the elements - this is what actually survives Anki's paste.
+    child = TreeNode(label="Child")
+    parent = TreeNode(label="Parent", children=[child])
+    root = TreeNode(label="Root", children=[parent])
 
     output = render_html(root)
-    body = output.split("<style>")[0]  # the static CSS always defines the
-    # ".tcg-timestamp" selector - check the body, not the whole output.
 
-    assert "tcg-timestamp" not in body
+    assert 'style="' in output
 
 
-def test_render_html_full_sample_tree_has_balanced_div_tags():
+def test_render_html_full_sample_tree_has_balanced_tags():
     text = (FIXTURES / "full_sample_tree.txt").read_text(encoding="utf-8")
     root = parse_tree(text)
 
     output = render_html(root)
 
     assert output.count("<div") == output.count("</div>")
-    # sanity: every section title from the sample tree survived into the output
+    assert output.count("<details") == output.count("</details>")
+    assert output.count("<summary") == output.count("</summary>")
     for i in range(1, 7):
         assert f"{i}." in output

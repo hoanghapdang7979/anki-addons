@@ -68,7 +68,9 @@ sớm nhất có thể (Task 2) trước khi đầu tư code parser/renderer, v�
 
 ### Phase 1: Core logic — parser + renderer (pure, TDD)
 
-- [ ] **Task 3: `tree_parser.py` — `parse_tree()` (TDD)**
+- [x] **Task 3: `tree_parser.py` — `parse_tree()` (TDD)** — DONE, 11/11 test pass ngay lần đầu,
+  kể cả 5 test dùng chính cây mẫu đầy đủ thật (fixture `tests/fixtures/full_sample_tree.txt`) —
+  xác nhận công thức `depth = len(prefix)/4 + 1` đúng trên dữ liệu thật, không chỉ case tối giản.
   - **Description:** Parse text tree ASCII (`├──`/`│`/`└──`, thụt lề 4 ký tự/cấp) thành
     `TreeNode`. Tách timestamp `[hh:mm:ss]` nếu có ở đầu label.
   - **Acceptance criteria:**

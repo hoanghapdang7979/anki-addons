@@ -9,7 +9,7 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 **Checkpoint 0:** Skeleton load được + cơ chế clipboard đã xác nhận hoạt động trong Anki thật. Nếu Task 2 fail → dừng lại bàn phương án khác trước khi làm tiếp.
 
 ## Phase 1: Core logic — parser + renderer (pure, TDD)
-- [ ] Task 3: `tree_parser.py` — `parse_tree()` (test cả case nhỏ lẫn cây mẫu đầy đủ từ SPEC.md)
+- [x] Task 3: `tree_parser.py` — `parse_tree()` (test cả case nhỏ lẫn cây mẫu đầy đủ từ SPEC.md)
 - [ ] Task 4: `tree_renderer.py` — `render_html()` (escape HTML, toggle collapsible, tự chứa CSS+JS)
 
 **Checkpoint 1:** `pytest` pass 100%, parser+renderer test kỹ với cây mẫu thật.

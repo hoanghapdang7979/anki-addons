@@ -127,8 +127,10 @@ sớm nhất có thể (Task 2) trước khi đầu tư code parser/renderer, v�
 
 ### Phase 2: UI wiring — dialog thật + copy clipboard
 
-- [~] **Task 5: `dialog.py` + wiring `__init__.py` — dialog thật, thay đoạn test tạm ở Task 2**
-  — Code xong, đã fix 1 bug thật user phát hiện (xem bên dưới), đang chờ user re-test.
+- [x] **Task 5: `dialog.py` + wiring `__init__.py` — dialog thật, thay đoạn test tạm ở Task 2**
+  — DONE, user xác nhận đúng hết (màu/thụt lề hiện đúng, bấm tiêu đề mở/thu gọn được) sau 2 vòng
+  fix (import bug + kiến trúc style/script → inline style + details/summary, xem Objective trong
+  SPEC.md mục "Đổi kiến trúc lúc build").
   **Bug tìm được + bài học quan trọng:** `tree_renderer.py` dùng import tuyệt đối
   `from tree_parser import TreeNode` thay vì tương đối `.tree_parser` — vỡ khi Anki thật load add-on
   dưới dạng package (đúng traceback `ModuleNotFoundError: No module named 'tree_parser'` khi mở
@@ -153,7 +155,9 @@ sớm nhất có thể (Task 2) trước khi đầu tư code parser/renderer, v�
   - **Files likely touched:** `tree-card-generator/dialog.py`, `tree-card-generator/__init__.py`
   - **Estimated scope:** M
 
-- [ ] **Task 6: Manual end-to-end verify đầy đủ với cây mẫu thật**
+- [x] **Task 6: Manual end-to-end verify đầy đủ với cây mẫu thật** — DONE, gộp chung với vòng
+  test cuối của Task 5 (dùng cùng cây mẫu 6 section đầy đủ). User xác nhận: có màu/thụt lề, bấm
+  tiêu đề mở/thu gọn đúng.
   - **Description:** Dùng đúng đoạn text tree đầy đủ 6 section trong SPEC.md (không phải bản rút
     gọn), test toàn bộ flow trong Anki thật (profile `IFE-Test`).
   - **Acceptance criteria:**

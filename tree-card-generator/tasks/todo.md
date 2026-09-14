@@ -10,13 +10,15 @@ Chi tiết đầy đủ từng task (acceptance criteria, verification, files): 
 
 ## Phase 1: Core logic — parser + renderer (pure, TDD)
 - [x] Task 3: `tree_parser.py` — `parse_tree()` (test cả case nhỏ lẫn cây mẫu đầy đủ từ SPEC.md)
-- [x] Task 4: `tree_renderer.py` — `render_html()` (escape HTML, toggle collapsible, tự chứa CSS+JS)
+- [x] Task 4: `tree_renderer.py` — `render_html()` (escape HTML, toggle collapsible; kiến trúc
+  đổi từ CSS+JS nhúng sang inline `style` + `<details>`/`<summary>` — xem plan.md Task 5)
 
 **Checkpoint 1:** `pytest` pass 100%, parser+renderer test kỹ với cây mẫu thật.
 
 ## Phase 2: UI wiring — dialog thật + copy clipboard
-- [ ] Task 5: `dialog.py` + wiring `__init__.py` (thay đoạn test tạm ở Task 2 bằng dialog thật)
-- [ ] Task 6: Manual end-to-end verify đầy đủ với cây mẫu 6 section thật trong Anki
+- [x] Task 5: `dialog.py` + wiring `__init__.py` — DONE (2 vòng fix: import bug + đổi kiến trúc
+  style/script → inline style + details/summary vì bị Anki strip khi paste)
+- [x] Task 6: Manual end-to-end verify đầy đủ với cây mẫu 6 section thật trong Anki — DONE, user xác nhận đúng hết
 
 **Checkpoint 2:** Toàn bộ Success Criteria trong [SPEC.md](../SPEC.md) đạt.
 

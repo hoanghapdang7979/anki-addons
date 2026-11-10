@@ -5,7 +5,7 @@ Chi tiết (acceptance criteria, verification, files): xem [plan.md](./plan.md).
 ## Phase 0: Foundation & rủi ro cao nhất
 - [x] Task 1: Skeleton + venv pin 25.9.4 + khối heatmap trên màn hình deck — DONE, xác nhận bằng screenshot Anki 25.9.4 thật (profile `IFE-Test`): khối hiện dưới bảng deck, ngay dưới dòng của Review Heatmap
 - [x] Task 2: Vòng `pycmd` → `set_config` → refresh (1 habit cứng, tick hôm nay) — DONE, xác nhận trong Anki 25.9.4 thật: tick/bỏ tick đúng, và tick còn nguyên sau khi user đóng/mở lại Anki
-- [ ] Task 3: Spike đồng bộ — config có sync không, merge thế nào *(user chạy sync)*
+- [x] Task 3: Spike đồng bộ — DONE bằng 2 collection thật + `anki.syncserver` cục bộ (không chạm tài khoản thật): config sync cả khối theo máy mới hơn, máy sync sau mất thay đổi chưa sync; xem SPEC mục 4
 
 **Checkpoint 0:** hook/bridge/persist hoạt động + cách config sync đã rõ.
 
@@ -23,8 +23,8 @@ Chi tiết (acceptance criteria, verification, files): xem [plan.md](./plan.md).
 - [x] Task 10: `manage_dialog.py` (Tools → Habit Heatmap, xoá hẳn có xác nhận) — DONE, user xác nhận thêm/đổi tên/archive-restore/xoá hẳn trong Anki thật; shadow `IFE-Test` có 1 tombstone từ lần xoá hẳn
 
 ## Phase 3: Đồng bộ & chống mất chuỗi
-- [x] Task 11: Shadow + union + dọn mồ côi — DONE (code + mô phỏng + chạy thật cho đường ghi shadow/tombstone; **khôi phục sau sync thật chưa thử → Task 12**)
-- [ ] Task 12: Verify sync end-to-end *(user chạy sync)*
+- [x] Task 11: Shadow + gộp 3 chiều + sync nối tiếp — viết lại sau khi user báo sync lúc đúng lúc sai (nguyên nhân: union không lan được bỏ tick; Anki thay cả khối config). 131 test + e2e 15/15
+- [ ] Task 12: Verify sync end-to-end — e2e tự động 15/15 đã đạt; **còn chờ user thử lại trên 2 profile thật** (bản mới cần restart Anki)
 
 **Checkpoint 2:** toàn bộ Success Criteria trong SPEC đạt.
 

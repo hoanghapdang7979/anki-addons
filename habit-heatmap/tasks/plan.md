@@ -151,3 +151,15 @@ Hai rủi ro lớn nhất chưa verify: (1) hook deck browser + `pycmd` bridge +
   `anki.lang.set_lang("en")` trước, và venv cần `pywin32` (đã thêm vào `requirements.txt`).
 - Chưa tick Task 1–3: cần user cài Junction vào `addons21` (autopilot không tự làm) và xem/bấm
   trong Anki thật; Task 3 cần user tự sync AnkiWeb.
+
+## Ghi chú: sync sai lệch do user phát hiện (Task 12, vòng 1)
+
+- User báo "A đổi → sync → B sync → B phải giống A, và ngược lại, nhưng lúc được lúc không".
+  Nguyên nhân gốc (đo, không đoán): (1) union chỉ thêm nên **bỏ tick không lan** và bị hồi sinh;
+  (2) Anki thay **cả khối config** theo máy mới hơn nên máy sync sau mất thay đổi chưa sync, và một
+  sync xen giữa (kể cả không đổi gì) làm bản gộp của ta thua lần nữa; (3) `sync_did_finish` chạy cả khi
+  sync lỗi nên không thể suy ra "đã sync".
+- Cách đo: `anki.syncserver` (có sẵn trong gói `anki`) + 2 `Collection` headless trong thư mục tạm —
+  không chạm Anki hay AnkiWeb thật. Script giữ lại ở `e2e/e2e_sync.py` làm test hồi quy.
+- Bài học: kiểm chứng sync bằng **kịch bản đo được** thay vì chỉ suy luận từ docstring; ban đầu tôi
+  chỉ dựa vào câu "config được gửi mỗi lần sync" và thiết kế quá lạc quan.

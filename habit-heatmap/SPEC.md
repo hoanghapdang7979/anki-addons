@@ -63,24 +63,38 @@ config key "habitHeatmap.d.<id>"   -> {"epoch": <date ordinal>, "bits": "<base64
 - Giới hạn thành thật: đổi đồng hồ máy vẫn có thể lách (không có cách chặn tuyệt đối offline);
   mức chấp nhận: dự án cá nhân.
 
-### 4. Đồng bộ & chống mất chuỗi
-- **Nguồn đồng bộ = AnkiWeb sẵn có** (không dựng server riêng). User cần bật sync AnkiWeb.
-- Cơ chế merge của config khi **sync thường** (per-key theo mtime hay cả khối?) nằm trong Rust
-  backend, **không đọc được từ Python** => **[UNVERIFIED]**; phải test 2 profile/2 máy (Risk #2).
-- Rủi ro thật: 2 máy cùng tick *offline* rồi sync => 1 bên có thể ghi đè bên kia. Giảm thiểu:
-  - **Shadow copy local** (`user_files/shadow-<tên profile>-<hash>.json`) lưu habit + bitmap + tombstone
-    mỗi lần tick/sửa. **Mỗi profile 1 file riêng** vì `user_files/` dùng chung cho mọi profile trên máy
-    (nếu chung 1 file thì tick của profile này lẫn sang profile kia dù không sync).
-  - Trong hook `sync_did_finish` (và `profile_did_open`) [VERIFIED hook tồn tại,
-    `aqt/main.py:1107` gọi sau sync xong, ngay trước `self.reset()`]: đọc config, **OR bitmap với
-    shadow**, nếu khác thì `set_config` lại + cập nhật shadow. Tick là tập tăng-dần nên union
-    không mất tick nào.
-  - Shadow cũng là **backup** khi user chọn "Download from AnkiWeb" (full sync ghi đè cả
-    collection): lần mở profile kế tiếp add-on union lại từ shadow.
-- Bỏ tick **hôm nay**: cho phép (tránh bấm nhầm). Giới hạn đã biết: nếu máy khác vừa sync tick
-  cùng ngày thì union có thể "hồi sinh" tick đã bỏ — chấp nhận (đã chốt, xem "Quyết định đã chốt").
-- Khi bỏ tick hôm nay, phải bỏ bit ở **cả config lẫn shadow**, nếu không union tức thì hồi sinh
-  chính tick vừa bỏ.
+### 4. Đồng bộ & chống mất chuỗi  *(viết lại sau khi đo trên Anki thật — xem `e2e/e2e_sync.py`)*
+
+**Hành vi thật của sync config, đo bằng 2 collection thật + `anki.syncserver` cục bộ [VERIFIED]:**
+- Config đi theo sync, nhưng **Anki thay cả khối config** theo bên "mới hơn": khi hai máy cùng sửa
+  trước lúc sync, máy sync sau **mất thay đổi chưa sync** (cả key khác của add-on khác trong khối).
+- Một thay đổi chỉ thắng nếu **không máy nào khác sync (kể cả sync không đổi gì) kể từ lúc nó được
+  ghi**. `mtime` chỉ chính xác tới giây.
+- Mỗi dòng config có `usn`: `-1` ngay sau khi ghi, `>= 0` sau sync thành công, **vẫn `-1` nếu sync
+  lỗi**. Đây là cách biết một giá trị đã thật sự được đồng bộ.
+- Hook `sync_did_finish` **vẫn chạy khi sync lỗi** (`aqt/sync.py:115`), nên không dùng nó để suy
+  ra "đã sync xong".
+
+**Hệ quả với bản đầu (union):** union chỉ thêm, không có khái niệm "bỏ" → bỏ tick không bao giờ
+lan sang máy kia và bị hồi sinh. Đã bỏ.
+
+**Thiết kế hiện tại — gộp 3 chiều (`merge3.py`, `reconcile.py`):**
+- Shadow local (`user_files/shadow-<profile>-<hash>.json`, **mỗi profile 1 file** vì `user_files/` dùng
+  chung mọi profile) giữ `local` (máy này vừa ghi gì) và `base` (giá trị cuối cùng **đã xác nhận
+  sync**, tức `usn != -1`).
+- Sau mỗi sync / khi mở profile: `kết quả = (L ∩ R) ∪ (L − B) ∪ (R − B)` cho tick (thêm từ bên nào
+  cũng giữ, bỏ từ bên nào cũng lan); habit list gộp theo id (bên kia xoá thì xoá, đổi tên/lưu trữ
+  bên kia thì nhận, cả hai sửa thì bản remote thắng).
+- `base` chỉ tiến lên khi giá trị đã `usn != -1` và merge không phải ghi gì → sync lỗi không làm
+  `base` sai.
+- **Sync nối tiếp tự động**: nếu merge phải ghi lại config thì add-on sync thêm 1 lần ngay sau 1.5s
+  (`mw.on_sync_button_clicked()`), vì không có nó bản gộp dễ bị máy kia đè lại (đo: 4/15 kịch bản
+  hỏng nếu thiếu). Giới hạn tối thiểu 60s giữa 2 lần để không bao giờ lặp vô hạn.
+- **Không tự xoá dữ liệu**: key `d.<id>` không còn habit chỉ bị bỏ qua. "Delete forever" xoá và
+  lan sang máy khác qua merge (không còn tombstone).
+- Máy mới "Download from AnkiWeb": shadow rỗng → nhận nguyên dữ liệu remote. Thay đổi chưa sync
+  trên máy hiện tại bị Download đè vẫn được khôi phục từ shadow.
+- Bỏ tick hôm nay: cho phép và **lan được** (khác bản đầu).
 
 ### 5. UI trên màn hình deck
 - Hook `gui_hooks.deck_browser_will_render_content(deck_browser, content)` [VERIFIED tồn tại;

@@ -61,15 +61,26 @@ class Store:
         return updated
 
     def delete_data(self, habit_id: str) -> None:
-        """Permanent deletion: also tombstone the id so a stale copy elsewhere is not restored."""
+        """Permanent deletion. The local shadow forgets the habit but keeps its base
+        entry, which is how the merge later knows this was a deliberate removal."""
         self.col.remove_config(DATA_PREFIX + habit_id)
 
         def forget(state) -> None:
             state.bitmaps.pop(habit_id, None)
             state.habits = [h for h in state.habits if h.id != habit_id]
-            state.deleted.add(habit_id)
 
         self._mirror(forget)
+
+    def is_pending(self, key: str) -> bool:
+        """True unless the config row is confirmed synced. Anki marks a row usn=-1
+        when written and sets the server usn after a successful sync; a failed sync
+        leaves it -1. Treat anything unreadable as pending (the safe answer)."""
+        try:
+            usn = self.col.db.scalar("select usn from config where key = ?", key)
+        except Exception:
+            logger.warning("could not read sync state of %s", key, exc_info=True)
+            return True
+        return usn is None or usn == -1
 
     def stored_ids(self) -> set[str]:
         return {

@@ -25,9 +25,14 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ShadowState:
+    """`habits`/`bitmaps` are what this machine last wrote (local). `base_*` are
+    the last values known to be in sync with the server, so a three-way merge
+    can tell "removed on one side" from "never had it"."""
+
     habits: list[Habit] = field(default_factory=list)
-    deleted: set[str] = field(default_factory=set)  # tombstones: ids deleted on purpose
     bitmaps: dict[str, Bitmap] = field(default_factory=dict)
+    base_habits: list[Habit] = field(default_factory=list)
+    base_bitmaps: dict[str, Bitmap] = field(default_factory=dict)
 
 
 class ShadowFile:
@@ -41,9 +46,12 @@ class ShadowFile:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             return ShadowState(
                 habits=habits_from_json(raw.get("habits")),
-                deleted=set(raw.get("deleted", [])),
                 bitmaps={k: Bitmap.from_dict(v) for k, v in raw.get("bitmaps", {}).items()},
-            )
+                base_habits=habits_from_json(raw.get("base_habits")),
+                base_bitmaps={
+                    k: Bitmap.from_dict(v) for k, v in raw.get("base_bitmaps", {}).items()
+                },
+            )  # an old file's "deleted" tombstones are ignored
         except (ValueError, AttributeError, TypeError):
             corrupt = self.path.with_name(self.path.name + ".corrupt")
             logger.exception("shadow file unreadable; moved to %s", corrupt)
@@ -54,8 +62,9 @@ class ShadowFile:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "habits": habits_to_json(state.habits),
-            "deleted": sorted(state.deleted),
             "bitmaps": {k: v.to_dict() for k, v in state.bitmaps.items()},
+            "base_habits": habits_to_json(state.base_habits),
+            "base_bitmaps": {k: v.to_dict() for k, v in state.base_bitmaps.items()},
         }
         tmp = self.path.with_name(self.path.name + ".tmp")
         tmp.write_text(json.dumps(payload), encoding="utf-8")

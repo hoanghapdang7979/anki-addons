@@ -127,15 +127,16 @@ def test_toggle_today_mirrors_tick_and_untick_into_shadow(shadowed):
     assert not shadow.load().bitmaps["h1"].is_set(T)
 
 
-def test_delete_data_writes_tombstone_and_clears_shadow_entry(shadowed):
+def test_delete_data_removes_habit_and_bitmap_from_local_shadow_but_keeps_base(shadowed):
     store, shadow = shadowed
     store.save_habits(add_habit([], "A", PALETTE[0], T, id_factory=lambda: "h1"))
     store.toggle_today("h1", TODAY)
+    shadow.update(lambda s: (setattr(s, "base_habits", list(s.habits)), s.base_bitmaps.update(s.bitmaps)))
     store.save_habits([])
     store.delete_data("h1")
     state = shadow.load()
-    assert "h1" in state.deleted
-    assert "h1" not in state.bitmaps
+    assert "h1" not in state.bitmaps and state.habits == []
+    assert [x.id for x in state.base_habits] == ["h1"]  # base still shows it existed -> deletion is detectable
     assert DATA_PREFIX + "h1" not in store.col.cfg
 
 

@@ -10,16 +10,33 @@ H = Habit("h1", "Exercise", PALETTE[0], T, False)
 
 def test_missing_file_loads_empty_state(tmp_path):
     state = ShadowFile(tmp_path / "s.json").load()
-    assert state.habits == [] and state.deleted == set() and state.bitmaps == {}
+    assert state.habits == [] and state.bitmaps == {}
+    assert state.base_habits == [] and state.base_bitmaps == {}
 
 
 def test_save_then_load_roundtrip(tmp_path):
     f = ShadowFile(tmp_path / "s.json")
-    f.save(ShadowState([H], {"gone"}, {"h1": Bitmap().with_bit(T, True).with_bit(T + 3, True)}))
+    f.save(
+        ShadowState(
+            habits=[H],
+            bitmaps={"h1": Bitmap().with_bit(T, True).with_bit(T + 3, True)},
+            base_habits=[H],
+            base_bitmaps={"h1": Bitmap().with_bit(T, True)},
+        )
+    )
     state = f.load()
-    assert state.habits == [H]
-    assert state.deleted == {"gone"}
+    assert state.habits == [H] and state.base_habits == [H]
     assert state.bitmaps["h1"].ticked_ordinals() == {T, T + 3}
+    assert state.base_bitmaps["h1"].ticked_ordinals() == {T}
+
+
+def test_old_format_file_with_tombstones_still_loads(tmp_path):
+    path = tmp_path / "s.json"
+    path.write_text(
+        json.dumps({"habits": [], "deleted": ["x"], "bitmaps": {}}), encoding="utf-8"
+    )
+    state = ShadowFile(path).load()
+    assert state.habits == [] and state.base_habits == [] and state.base_bitmaps == {}
 
 
 def test_corrupt_file_is_set_aside_and_empty_state_returned(tmp_path):
@@ -40,8 +57,8 @@ def test_save_creates_parent_directory_and_leaves_no_temp_file(tmp_path):
 
 def test_update_applies_function_and_persists(tmp_path):
     f = ShadowFile(tmp_path / "s.json")
-    f.update(lambda s: s.deleted.add("x"))
-    assert f.load().deleted == {"x"}
+    f.update(lambda s: s.bitmaps.__setitem__("x", Bitmap().with_bit(T, True)))
+    assert f.load().bitmaps["x"].ticked_ordinals() == {T}
 
 
 from shadow import shadow_filename  # noqa: E402

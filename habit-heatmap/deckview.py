@@ -23,7 +23,7 @@ from aqt.utils import tooltip
 
 from .assets import build_assets_html
 from .context import make_store
-from .days import anki_today, navigate_year
+from .days import MAX_VIEW_YEAR, MIN_VIEW_YEAR, anki_today, navigate_year
 from .habits import active
 from .notes import MAX_NOTE_CHARS, NoteStorageFull, parse_note_arg
 from .render import (
@@ -49,12 +49,6 @@ def _notice(text: str) -> str:
     )
 
 
-def _year_range(habits, today: date) -> tuple[int, int]:
-    """Earliest year any active habit was created, up to the current year."""
-    earliest = min(date.fromordinal(h.created).year for h in habits)
-    return min(earliest, today.year), today.year
-
-
 def _render_blocks(content) -> None:
     col = aqt.mw.col
     store = make_store()
@@ -69,9 +63,8 @@ def _render_blocks(content) -> None:
         content.stats += _notice("Habit Heatmap: no habits yet - add one from Tools > Habit Heatmap...")
         return
 
-    min_year, max_year = _year_range(habits, today)
-    view_year = navigate_year(_view_year, "stay", today.year, min_year, max_year)
-    content.stats += build_toolbar_html(view_year, min_year, max_year)
+    view_year = navigate_year(_view_year, "stay", today.year, MIN_VIEW_YEAR, MAX_VIEW_YEAR)
+    content.stats += build_toolbar_html(view_year, MIN_VIEW_YEAR, MAX_VIEW_YEAR)
     for habit in habits:
         try:
             content.stats += build_block_html(
@@ -101,11 +94,7 @@ def _do_nav(command: str) -> None:
     global _view_year
     col = aqt.mw.col
     today = anki_today(col.sched.day_cutoff)
-    habits = active(make_store().habits())
-    if not habits:
-        return
-    min_year, max_year = _year_range(habits, today)
-    _view_year = navigate_year(_view_year, command, today.year, min_year, max_year)
+    _view_year = navigate_year(_view_year, command, today.year, MIN_VIEW_YEAR, MAX_VIEW_YEAR)
 
 
 def _do_note(arg: str) -> None:

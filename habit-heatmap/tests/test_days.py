@@ -118,3 +118,18 @@ def test_navigate_year(view, command, expected):
 
 def test_navigate_year_clamps_a_stale_view_year_into_range():
     assert navigate_year(2010, "bogus", current_year=2026, min_year=2024, max_year=2026) == 2024
+
+
+from days import MAX_VIEW_YEAR, MIN_VIEW_YEAR  # noqa: E402
+
+
+def test_arrows_work_even_when_every_habit_was_created_this_year():
+    kw = dict(current_year=2026, min_year=MIN_VIEW_YEAR, max_year=MAX_VIEW_YEAR)
+    assert navigate_year(None, "prev", **kw) == 2025
+    assert navigate_year(None, "next", **kw) == 2027
+    assert navigate_year(2027, "today", **kw) == 2026
+
+
+def test_view_year_range_is_generous_but_valid_for_year_grid():
+    assert MIN_VIEW_YEAR < 2026 < MAX_VIEW_YEAR
+    assert year_grid(MIN_VIEW_YEAR) and year_grid(MAX_VIEW_YEAR)

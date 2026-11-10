@@ -72,16 +72,17 @@ góc, lưới canh giữa, `max-width` ≈ cột×12px và **co theo bề rộng
 | quá khứ, đã tick | Done | màu theme theo streak |
 | quá khứ, chưa tick | Missed | xám nhạt (0.22) |
 
-**Theme + độ đậm theo streak.** 5 theme: `lime`, `olive`, `ice`, `magenta`, `flame` (tên theo Review
-Heatmap), mỗi theme 5 mức đậm dần. Mức của một ô **Done** = độ dài đoạn tick liên tiếp kết thúc
+**Theme + độ đậm theo streak.** 12 theme: `lime`, `olive`, `ice`, `magenta`, `flame` (5 tên đầu theo Review
+Heatmap) + `teal`, `purple`, `crimson`, `gold`, `indigo`, `rose`, `slate`, mỗi theme 5 mức đậm dần. Mức của một ô **Done** = độ dài đoạn tick liên tiếp kết thúc
 tại ngày đó: `1 ngày → L1`, `2–3 → L2`, `4–6 → L3`, `7–13 → L4`, `≥14 → L5`. Ô có note có **chấm nhỏ**
 ở góc (không làm đậm màu, để màu chỉ mang một nghĩa là streak). `Habit.color` chuyển nghĩa thành
 **tên theme**; giá trị hex cũ của v1 được ánh xạ về theme theo thứ tự `PALETTE` cũ, không lọt
 thì `lime` — **không ghi lại dữ liệu để migrate**, chỉ đổi cách đọc.
 
 **Điều hướng.** Một thanh `‹ ○ ›` **dùng chung, đặt trên các khối** (như Review Heatmap), điều
-khiển năm đang xem cho mọi habit. `‹` năm trước, `›` năm sau, `○` về năm hiện tại. Giới hạn: không
-vượt quá năm hiện tại; không lùi quá năm tạo habit sớm nhất (nút mờ ở biên). Năm đang xem chỉ lưu
+khiển năm đang xem cho mọi habit. `‹` năm trước, `›` năm sau, `○` về năm hiện tại. **Hai mũi tên luôn bấm
+được** trong khoảng cố định 2000–2100, không phụ thuộc ngày tạo habit *(bản đầu giới hạn theo
+"năm habit sớm nhất → năm nay" khiến cả hai nút bị khoá khi mọi habit tạo trong năm nay — sửa sau khi user báo)*. Năm đang xem chỉ lưu
 **trong bộ nhớ** (mặc định năm hiện tại mỗi lần mở Anki). Khi xem năm **không phải hiện tại**: ẩn
 nút Check today / Note của hôm nay; **không** tick được; ô quá khứ vẫn bấm để thêm/sửa note. **Nhãn năm** hiện dưới lưới (chữ nhỏ, xám, canh giữa).
 

@@ -8,8 +8,9 @@ from themes import LEVELS, THEME_NAMES, THEMES, resolve_theme, shade, streak_lev
 HEX = re.compile(r"^#[0-9a-f]{6}$")
 
 
-def test_there_are_five_named_themes_each_with_five_levels():
-    assert THEME_NAMES == ["lime", "olive", "ice", "magenta", "flame"]
+def test_there_are_twelve_named_themes_each_with_five_levels():
+    assert len(THEME_NAMES) == 12 and len(set(THEME_NAMES)) == 12
+    assert THEME_NAMES[:5] == ["lime", "olive", "ice", "magenta", "flame"]
     assert LEVELS == 5
     for name in THEME_NAMES:
         assert len(THEMES[name]) == 5
@@ -80,3 +81,8 @@ def test_streak_runs_counts_consecutive_days_ending_at_each_tick():
 
 def test_streak_runs_empty():
     assert streak_runs(set()) == {}
+
+
+def test_every_shade_is_unique_across_all_themes():
+    every = [c for name in THEME_NAMES for c in THEMES[name]]
+    assert len(every) == len(set(every)) == 12 * 5

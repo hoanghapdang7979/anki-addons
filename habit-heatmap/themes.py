@@ -1,12 +1,9 @@
-"""Colour themes for the heatmap (names follow the Review Heatmap add-on) and
-the streak -> shade mapping. No aqt/anki imports.
+"""Colour themes for the heatmap (the first five follow the Review Heatmap
+add-on) and the streak -> shade mapping. No aqt/anki imports.
 
 `Habit.color` stores a theme name. Hex values written by v1 are mapped to a
 theme when read; nothing is migrated on disk.
 """
-
-THEME_NAMES = ["lime", "olive", "ice", "magenta", "flame"]
-LEVELS = 5
 
 # Five shades per theme, light -> dark (level 1 = a streak of one day).
 THEMES: dict[str, list[str]] = {
@@ -15,7 +12,16 @@ THEMES: dict[str, list[str]] = {
     "ice": ["#c6e2ff", "#79b8ff", "#2f81f7", "#1158c7", "#0a3069"],
     "magenta": ["#fbcfe8", "#f08ac8", "#d13fa3", "#9b1d79", "#661252"],
     "flame": ["#ffe0a3", "#ffb454", "#f47b20", "#d1451b", "#8f2410"],
+    "teal": ["#b2f0e8", "#5dd5c6", "#1fb5a3", "#0f857a", "#074f49"],
+    "purple": ["#e5d4fb", "#c4a1f2", "#9a63e0", "#6f35b8", "#43206f"],
+    "crimson": ["#fbc4c4", "#f08080", "#dc3a3a", "#a82020", "#661212"],
+    "gold": ["#fbeab0", "#f5d062", "#e0aa1a", "#b07d0a", "#6e4c05"],
+    "indigo": ["#c9d0fb", "#8f9cf0", "#5a68d8", "#3744a8", "#1f2766"],
+    "rose": ["#fdd5e0", "#f9a3bd", "#ee6a95", "#c73a6c", "#872046"],
+    "slate": ["#d7dce2", "#aab3be", "#7c8896", "#525d6b", "#2e3641"],
 }
+THEME_NAMES = list(THEMES)
+LEVELS = 5
 
 _LEGACY_HEX = {
     "#40c463": "lime",

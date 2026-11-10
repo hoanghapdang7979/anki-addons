@@ -51,3 +51,9 @@ def navigate_year(
     elif command == "today":
         year = current_year
     return clamp_year(year, min_year, max_year)
+
+
+# Years the ‹ › buttons can reach. Deliberately independent of when habits were created:
+# the arrows must always work (a habit made this year still lets you look at last year).
+MIN_VIEW_YEAR = 2000
+MAX_VIEW_YEAR = 2100

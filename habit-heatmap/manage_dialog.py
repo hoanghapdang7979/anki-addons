@@ -13,6 +13,7 @@ from aqt.qt import (
     QBrush,
     QColor,
     QDialog,
+    QDialogButtonBox,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -40,7 +41,7 @@ from .habits import (
     reorder,
     restore_habit,
 )
-from .themes import THEME_NAMES, resolve_theme
+from .themes import THEME_NAMES, resolve_theme, shade
 
 logger = logging.getLogger(__name__)
 
@@ -148,10 +149,36 @@ class ManageDialog(QDialog):
         habit = self._selected()
         if habit is None:
             return
-        current = THEME_NAMES.index(resolve_theme(habit.color))
-        theme, ok = QInputDialog.getItem(self, "Color theme", "Theme:", THEME_NAMES, current, False)
-        if ok:
+        theme = self._pick_theme(resolve_theme(habit.color))
+        if theme is not None:
             self._commit(recolor_habit(self._habits(), habit.id, theme), habit.id)
+
+    def _pick_theme(self, current: str) -> str | None:
+        """Modal list of the themes, each row painted in its own colour. None if cancelled."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Color theme")
+        themes = QListWidget(dialog)
+        for i, name in enumerate(THEME_NAMES):
+            themes.addItem(name)
+            background = QColor(shade(name, 3))
+            lightness = 0.299 * background.red() + 0.587 * background.green() + 0.114 * background.blue()
+            item = themes.item(i)
+            item.setBackground(QBrush(background))
+            item.setForeground(QBrush(QColor("black" if lightness > 150 else "white")))
+            if name == current:
+                themes.setCurrentRow(i)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, parent=dialog
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        themes.itemDoubleClicked.connect(lambda *_: dialog.accept())
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(themes)
+        layout.addWidget(buttons)
+        if dialog.exec() != QDialog.DialogCode.Accepted or themes.currentItem() is None:
+            return None
+        return themes.currentItem().text()
 
     def _move(self, delta: int) -> None:
         habit = self._selected()

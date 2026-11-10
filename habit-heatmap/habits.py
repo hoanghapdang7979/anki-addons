@@ -9,7 +9,10 @@ from dataclasses import dataclass, replace
 
 # Default colours handed to new habits, in turn. Habit.color holds a theme name
 # (see themes.py); hex values written by v1 are mapped to a theme when read.
-PALETTE = ["lime", "ice", "flame", "magenta", "olive"]
+PALETTE = [
+    "lime", "ice", "flame", "magenta", "teal", "gold",
+    "purple", "crimson", "olive", "indigo", "rose", "slate",
+]
 
 
 @dataclass(frozen=True)

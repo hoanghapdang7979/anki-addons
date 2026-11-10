@@ -17,11 +17,12 @@ mất chuỗi.
 4. **Tooltip:** rê chuột vào bất kỳ ô nào để xem ngày đầy đủ + thứ, trạng thái
    (`Done` / `Done today` / `Today - not done yet` / `Missed` / `Not started` / `Upcoming`) và note
    của ngày đó.
-5. **‹ ○ ›** phía trên các khối: xem năm trước / về năm hiện tại / năm sau. Năm khác chỉ để xem lịch
-   sử (không tick được), nhưng vẫn thêm được note cho các ngày đã qua.
+5. **‹ ○ ›** phía trên các khối: xem năm trước / về năm hiện tại / năm sau. Hai mũi tên **luôn bấm
+   được** (từ năm 2000 đến 2100), kể cả khi mọi habit mới tạo năm nay. Năm khác chỉ để xem (không
+   tick được); năm tương lai toàn ô Upcoming; vẫn thêm được note cho các ngày đã qua từ ngày tạo habit.
 6. Mỗi khối có dòng thống kê tô màu: **Current streak**, **Longest streak**, **Days done** (+ %).
-7. Trong **Tools → Habit Heatmap...**: đổi tên, **chọn theme màu** (lime, olive, ice, magenta,
-   flame), **kéo thả để đổi thứ tự** (thứ tự = mức ưu tiên, trên cùng = cao nhất, có đánh số;
+7. Trong **Tools → Habit Heatmap...**: đổi tên, **chọn theme màu** (12 theme: lime, olive, ice, magenta,
+   flame, teal, purple, crimson, gold, indigo, rose, slate; hộp chọn tô đúng màu từng theme), **kéo thả để đổi thứ tự** (thứ tự = mức ưu tiên, trên cùng = cao nhất, có đánh số;
    cũng là thứ tự các khối trên màn hình deck), **Archive / Restore**, **Delete forever**.
 
 ### Quy tắc

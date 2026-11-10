@@ -42,3 +42,23 @@ def test_update_applies_function_and_persists(tmp_path):
     f = ShadowFile(tmp_path / "s.json")
     f.update(lambda s: s.deleted.add("x"))
     assert f.load().deleted == {"x"}
+
+
+from shadow import shadow_filename  # noqa: E402
+
+
+def test_shadow_filename_is_filesystem_safe_and_per_profile():
+    a = shadow_filename("User 1")
+    b = shadow_filename("IFE-Test")
+    assert a != b
+    assert a.startswith("shadow-") and a.endswith(".json")
+    assert all(c.isalnum() or c in "-_." for c in a)
+
+
+def test_shadow_filename_distinguishes_names_that_sanitize_alike():
+    assert shadow_filename("a b") != shadow_filename("a_b")
+
+
+def test_shadow_filename_handles_missing_and_unicode_names():
+    assert shadow_filename(None).endswith(".json")
+    assert all(c.isalnum() or c in "-_." for c in shadow_filename(r"Hồ sơ 1/\:"))

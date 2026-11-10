@@ -101,7 +101,8 @@ Hai rủi ro lớn nhất chưa verify: (1) hook deck browser + `pycmd` bridge +
 
 - [ ] **Task 11: Shadow + union + dọn mồ côi** — shadow `user_files/shadow.json`; ghi cả config
   lẫn shadow mỗi lần tick/bỏ tick; `sync_did_finish` + `profile_did_open`: OR bitmap với shadow rồi
-  `set_config` nếu khác; dọn key `d.<id>` không còn trong `habits`; xoá hẳn xoá cả entry shadow.
+  `set_config` nếu khác; ~~dọn key `d.<id>` mồ côi~~ (bỏ: không tự xoá dữ liệu); xoá hẳn xoá cả entry shadow + ghi tombstone;
+  union cả danh sách habit (theo id, trừ tombstone) để khôi phục khi config bị ghi đè.
   Phần merge là hàm thuần → TDD. **AC:** unit test union/dọn mồ côi; không hồi sinh habit đã xoá.
   **Dep:** Task 3, 5, 9. **Scope:** M
 - [ ] **Task 12: Verify sync end-to-end** *(user chạy sync)* — 2 profile cùng tài khoản: tick

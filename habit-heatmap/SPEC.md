@@ -68,7 +68,9 @@ config key "habitHeatmap.d.<id>"   -> {"epoch": <date ordinal>, "bits": "<base64
 - Cơ chế merge của config khi **sync thường** (per-key theo mtime hay cả khối?) nằm trong Rust
   backend, **không đọc được từ Python** => **[UNVERIFIED]**; phải test 2 profile/2 máy (Risk #2).
 - Rủi ro thật: 2 máy cùng tick *offline* rồi sync => 1 bên có thể ghi đè bên kia. Giảm thiểu:
-  - **Shadow copy local** (`user_files/shadow.json`, per-device) lưu cùng dữ liệu mỗi lần tick.
+  - **Shadow copy local** (`user_files/shadow-<tên profile>-<hash>.json`) lưu habit + bitmap + tombstone
+    mỗi lần tick/sửa. **Mỗi profile 1 file riêng** vì `user_files/` dùng chung cho mọi profile trên máy
+    (nếu chung 1 file thì tick của profile này lẫn sang profile kia dù không sync).
   - Trong hook `sync_did_finish` (và `profile_did_open`) [VERIFIED hook tồn tại,
     `aqt/main.py:1107` gọi sau sync xong, ngay trước `self.reset()`]: đọc config, **OR bitmap với
     shadow**, nếu khác thì `set_config` lại + cập nhật shadow. Tick là tập tăng-dần nên union
@@ -203,8 +205,10 @@ def current_streak(ticked: set[int], today_ordinal: int) -> int:
 4. **Habit không dùng nữa:** mặc định **Lưu trữ** (ẩn khỏi màn hình deck, **giữ nguyên lịch sử**,
    có thể khôi phục). Ngoài ra có action **Xoá hẳn** (dialog xác nhận, ghi rõ "không hoàn tác"):
    xoá `habitHeatmap.d.<id>`, xoá khỏi `habitHeatmap.habits` **và xoá luôn entry trong shadow** —
-   nếu không, bước union sau sync sẽ hồi sinh dữ liệu vừa xoá. Dữ liệu mồ côi (key `d.<id>` mà
-   `habits` không còn id) bị bỏ qua khi render và được dọn khi mở profile.
+   nếu không, bước union sau sync sẽ hồi sinh dữ liệu vừa xoá — shadow lưu thêm **tombstone** (id đã
+   xoá có chủ đích) để union không khôi phục lại. **Không có dọn mồ côi tự động** (đổi so với bản
+   đầu): dữ liệu `d.<id>` không còn trong `habits` chỉ bị bỏ qua khi render, không bao giờ bị xoá,
+   vì danh sách habit cũ/stale đến qua sync không được phép làm mất lịch sử. Chỉ "Xoá hẳn" mới xoá.
 5. **Habit hằng ngày** (v1): không có lịch tuỳ chỉnh theo tuần (chưa làm, hỏi lại nếu cần).
 
 ## Open Questions còn lại

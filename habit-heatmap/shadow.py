@@ -65,3 +65,15 @@ class ShadowFile:
         state = self.load()
         fn(state)
         self.save(state)
+
+
+def shadow_filename(profile_name: str | None) -> str:
+    """File name for one profile's shadow. A short hash of the real name keeps
+    names that sanitise alike ("a b" vs "a_b") apart."""
+    import hashlib
+    import re
+
+    name = profile_name or "default"
+    safe = re.sub(r"[^A-Za-z0-9_-]", "_", name)[:40]
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:8]
+    return f"shadow-{safe}-{digest}.json"

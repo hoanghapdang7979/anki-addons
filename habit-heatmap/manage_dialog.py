@@ -18,6 +18,7 @@ from aqt.qt import (
 )
 from aqt.utils import tooltip
 
+from .context import make_store
 from .days import anki_today
 from .habits import (
     PALETTE,
@@ -30,7 +31,6 @@ from .habits import (
     rename_habit,
     restore_habit,
 )
-from .store import Store
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class ManageDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Habit Heatmap - manage habits")
         self.resize(420, 360)
-        self._store = Store(aqt.mw.col)
+        self._store = make_store()
         self._list = QListWidget(self)
 
         layout = QVBoxLayout(self)

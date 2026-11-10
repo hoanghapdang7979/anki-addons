@@ -1,54 +1,36 @@
-"""Habit Heatmap - Task 1/2 spike: one hard-coded habit rendered on the deck
-browser, toggled via pycmd and persisted with col.set_config. Replaced by the
-real store-backed wiring in Task 9.
-"""
+"""Habit Heatmap: one heatmap block per habit on the deck-browser screen, tick
+today only, data kept in the collection config (rides AnkiWeb sync) with a
+local per-profile shadow backup merged back by union."""
 
 import logging
 
 import aqt
 from aqt import gui_hooks
-from aqt.deckbrowser import DeckBrowser
 
-from .bitmap import Bitmap, toggle_today
-from .days import anki_today
-from .habits import PALETTE, Habit
-from .render import TOGGLE_CMD_PREFIX, build_block_html
+from . import deckview, manage_dialog
+from .context import make_store
+from .reconcile import reconcile
 
 logger = logging.getLogger(__name__)
 
-SPIKE_ID = "spike"
-SPIKE_KEY = "habitHeatmap.spike"
+_LEGACY_SPIKE_KEY = "habitHeatmap.spike"  # left over from the Task 1-2 spike
 
 
-def _load(col) -> Bitmap:
+def _reconcile_now() -> None:
+    """Never raise into Anki's profile-open/sync flow."""
     try:
-        return Bitmap.from_dict(col.get_config(SPIKE_KEY))
-    except ValueError:
-        logger.exception("corrupt %s, showing empty bitmap (not overwriting)", SPIKE_KEY)
-        return Bitmap()
+        col = aqt.mw.col
+        if col is None:
+            return
+        if col.get_config(_LEGACY_SPIKE_KEY) is not None:
+            col.remove_config(_LEGACY_SPIKE_KEY)
+        reconcile(make_store())
+    except Exception:
+        logger.exception("Habit Heatmap: reconcile failed")
 
 
-def _on_deck_browser_render(deck_browser: DeckBrowser, content) -> None:
-    col = aqt.mw.col
-    today = anki_today(col.sched.day_cutoff)
-    habit = Habit(SPIKE_ID, "Spike habit (Task 2)", PALETTE[0], today.toordinal() - 30)
-    content.stats += build_block_html(habit, _load(col), today)
-
-
-def _on_js_message(handled: tuple[bool, object], message: str, context: object):
-    if handled[0] or not message.startswith(TOGGLE_CMD_PREFIX):
-        return handled
-    if not isinstance(context, DeckBrowser):
-        return handled
-    if message[len(TOGGLE_CMD_PREFIX) :] != SPIKE_ID:
-        return handled
-    col = aqt.mw.col
-    today = anki_today(col.sched.day_cutoff)
-    col.set_config(SPIKE_KEY, toggle_today(_load(col), today).to_dict())
-    context.refresh()
-    return (True, None)
-
-
-gui_hooks.deck_browser_will_render_content.append(_on_deck_browser_render)
-gui_hooks.webview_did_receive_js_message.append(_on_js_message)
+deckview.register()
+manage_dialog.register()
+gui_hooks.profile_did_open.append(_reconcile_now)
+gui_hooks.sync_did_finish.append(_reconcile_now)
 logger.info("Habit Heatmap loaded")

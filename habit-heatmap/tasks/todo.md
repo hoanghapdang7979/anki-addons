@@ -3,8 +3,8 @@
 Chi tiết (acceptance criteria, verification, files): xem [plan.md](./plan.md).
 
 ## Phase 0: Foundation & rủi ro cao nhất
-- [ ] Task 1: Skeleton + venv pin 25.9.4 + khối heatmap trên màn hình deck — **code xong + pre-verify, chờ user xem trong Anki thật**
-- [ ] Task 2: Vòng `pycmd` → `set_config` → refresh (1 habit cứng, tick hôm nay) — **code xong + pre-verify, chờ user bấm thử trong Anki thật**
+- [x] Task 1: Skeleton + venv pin 25.9.4 + khối heatmap trên màn hình deck — DONE, xác nhận bằng screenshot Anki 25.9.4 thật (profile `IFE-Test`): khối hiện dưới bảng deck, ngay dưới dòng của Review Heatmap
+- [ ] Task 2: Vòng `pycmd` → `set_config` → refresh (1 habit cứng, tick hôm nay) — bấm tick/bỏ tick đã chạy đúng trong Anki thật (nút đổi nhãn, streak 1 ngày, ô hôm nay xanh, bỏ tick về 0); **còn thiếu: đóng/mở lại Anki xem tick còn giữ không**
 - [ ] Task 3: Spike đồng bộ — config có sync không, merge thế nào *(user chạy sync)*
 
 **Checkpoint 0:** hook/bridge/persist hoạt động + cách config sync đã rõ.

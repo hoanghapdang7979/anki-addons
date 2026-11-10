@@ -144,8 +144,7 @@ def test_parse_note_arg_accepts_id_and_iso_date():
 @pytest.mark.parametrize(
     "arg",
     ["", "h1", "h1:", ":2026-11-05", "h1:2026-02-30", "h1:2026-1-5", "h 1:2026-11-05",
-     "h1:2026-11-05:x", "h1'):x(:2026-11-05", "h1:2026-11-05 ", "h1:20261105", "h1:2026-11-05
-"],
+     "h1:2026-11-05:x", "h1'):x(:2026-11-05", "h1:2026-11-05 ", "h1:20261105", "h1:2026-11-05\n"],
 )
 def test_parse_note_arg_rejects_anything_else(arg):
     assert parse_note_arg(arg) is None

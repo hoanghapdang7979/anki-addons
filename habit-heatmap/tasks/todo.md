@@ -19,8 +19,8 @@ Chi tiết (acceptance criteria, verification, files): xem [plan.md](./plan.md).
 **Checkpoint 1:** pytest pass 100% — ✅ 68/68.
 
 ## Phase 2: Tích hợp thật
-- [ ] Task 9: `store.py` + nối render thật (nhiều habit, Python validate "hôm nay")
-- [ ] Task 10: `manage_dialog.py` (Tools → Habit Heatmap, xoá hẳn có xác nhận)
+- [ ] Task 9: `store.py` + nối render thật (nhiều habit, Python validate "hôm nay") — `store.py` (có test, 78/78) + `deckview.py` xong và mô phỏng với aqt thật; **chưa nối vào `__init__.py`** (spike hiện tại còn nguyên để user chạy Task 3)
+- [ ] Task 10: `manage_dialog.py` (Tools → Habit Heatmap, xoá hẳn có xác nhận) — `manage_dialog.py` xong, mô phỏng với Qt offscreen: thêm/chặn tên rỗng/đổi tên giữ id/đổi màu/lên-xuống/lưu trữ/xoá hẳn có xác nhận mặc định No; **chưa nối vào `__init__.py`, chưa xem trong Anki thật**
 
 ## Phase 3: Đồng bộ & chống mất chuỗi
 - [ ] Task 11: Shadow + union + dọn mồ côi

@@ -95,3 +95,26 @@ def test_clamp_year(year, lo, hi, expected):
 
 def test_clamp_year_when_min_exceeds_max_returns_max():
     assert clamp_year(2000, 2030, 2026) == 2026
+
+
+from days import navigate_year  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "view,command,expected",
+    [
+        (None, "prev", 2025),  # default view is the current year
+        (None, "next", 2026),  # cannot go past the current year
+        (2025, "next", 2026),
+        (2024, "prev", 2024),  # earliest allowed
+        (2024, "today", 2026),
+        (2025, "today", 2026),
+        (2026, "bogus", 2026),  # unknown command leaves the year alone
+    ],
+)
+def test_navigate_year(view, command, expected):
+    assert navigate_year(view, command, current_year=2026, min_year=2024, max_year=2026) == expected
+
+
+def test_navigate_year_clamps_a_stale_view_year_into_range():
+    assert navigate_year(2010, "bogus", current_year=2026, min_year=2024, max_year=2026) == 2024

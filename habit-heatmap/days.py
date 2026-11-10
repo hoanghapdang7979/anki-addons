@@ -37,3 +37,17 @@ def year_grid(year: int) -> list[list[date | None]]:
 def clamp_year(year: int, min_year: int, max_year: int) -> int:
     """Clamp into [min_year, max_year]; if the range is inverted, max_year wins."""
     return max(min(year, max_year), min(min_year, max_year))
+
+
+def navigate_year(
+    view_year: int | None, command: str, current_year: int, min_year: int, max_year: int
+) -> int:
+    """Year shown after a prev/next/today click. `None` means "the current year"."""
+    year = current_year if view_year is None else view_year
+    if command == "prev":
+        year -= 1
+    elif command == "next":
+        year += 1
+    elif command == "today":
+        year = current_year
+    return clamp_year(year, min_year, max_year)

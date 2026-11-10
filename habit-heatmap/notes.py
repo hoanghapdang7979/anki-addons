@@ -45,3 +45,17 @@ def merge_notes(
 def note_day_ok(day: date, created: int, today: date) -> bool:
     """A note may be written for any day from the habit's creation day up to today."""
     return created <= day.toordinal() <= today.toordinal()
+
+
+_NOTE_ARG_RE = re.compile(r"([A-Za-z0-9_-]+):(\d{4}-\d{2}-\d{2})")
+
+
+def parse_note_arg(arg: str) -> tuple[str, date] | None:
+    """Parse "<habit_id>:<YYYY-MM-DD>" from the page. None if it is anything else."""
+    match = _NOTE_ARG_RE.fullmatch(arg)
+    if match is None:
+        return None
+    try:
+        return match.group(1), date.fromisoformat(match.group(2))
+    except ValueError:
+        return None

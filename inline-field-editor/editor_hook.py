@@ -16,6 +16,24 @@ def build_editable_span(field_text: str, field_name: str) -> str:
     )
 
 
+SAVE_MESSAGE_PREFIX = "ife:save:"
+
+
+def parse_save_message(message: str) -> tuple[str, str] | None:
+    """Parse a "ife:save:<field>:<html>" bridge message from inline_edit.js.
+
+    Returns (field_name, new_html), or None if this message isn't ours to
+    handle, or is missing the field-name separator.
+    """
+    if not message.startswith(SAVE_MESSAGE_PREFIX):
+        return None
+    payload = message[len(SAVE_MESSAGE_PREFIX) :]
+    field_name, sep, new_html = payload.partition(":")
+    if not sep:
+        return None
+    return field_name, new_html
+
+
 def edit_field_filter(
     field_text: str, field_name: str, filter_name: str, ctx: Any
 ) -> str:

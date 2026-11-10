@@ -13,7 +13,7 @@ _dialog_instance: TreeDialog | None = None
 
 def _open_tree_dialog(editor) -> None:
     global _dialog_instance
-    _dialog_instance = TreeDialog(editor.parentWindow)
+    _dialog_instance = TreeDialog(editor, editor.parentWindow)
     _dialog_instance.show()
 
 

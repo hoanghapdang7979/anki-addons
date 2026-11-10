@@ -127,37 +127,83 @@ sớm nhất có thể (Task 2) trước khi đầu tư code parser/renderer, v�
 
 ### Phase 2: UI wiring — dialog thật + copy clipboard
 
-- [x] **Task 5: `dialog.py` + wiring `__init__.py` — dialog thật, thay đoạn test tạm ở Task 2**
-  — DONE, user xác nhận đúng hết (màu/thụt lề hiện đúng, bấm tiêu đề mở/thu gọn được) sau 2 vòng
-  fix (import bug + kiến trúc style/script → inline style + details/summary, xem Objective trong
-  SPEC.md mục "Đổi kiến trúc lúc build").
-  **Bug tìm được + bài học quan trọng:** `tree_renderer.py` dùng import tuyệt đối
-  `from tree_parser import TreeNode` thay vì tương đối `.tree_parser` — vỡ khi Anki thật load add-on
-  dưới dạng package (đúng traceback `ModuleNotFoundError: No module named 'tree_parser'` khi mở
-  Add Cards). Fix bằng try/except (relative trước, absolute fallback cho pytest). **Quan trọng
-  hơn:** lần pre-verify TRƯỚC đó của tôi (`importlib.import_module` giả lập) đã **KHÔNG bắt được
-  bug này** vì tôi chạy lệnh Python từ ngay trong thư mục `tree-card-generator/` — Python tự thêm
-  cwd vào `sys.path` (entry `''`), vô tình làm `tree_parser` import được như top-level module,
-  che mất lỗi thật. Từ nay **luôn chạy pre-verify simulation từ thư mục gốc repo** (cwd trung
-  lập), không phải từ trong thư mục add-on, để không lặp lại false-positive này.
-  - **Description:** `QDialog` với `QPlainTextEdit` (nhập text tree) + `QPushButton` "Generate &
-    Copy". Bấm Generate: `parse_tree()` → `render_html()` → copy vào clipboard qua cơ chế đã
-    verify ở Task 2 (không phải đoạn test cố định nữa, mà HTML thật từ renderer). `__init__.py`
-    đăng ký nút mở dialog qua `editor_did_init_buttons` (xoá đoạn nút test tạm của Task 2).
+- [x] **Task 5: `dialog.py` + wiring `__init__.py` — dialog thật** — DONE thật, xác nhận bằng
+  **HTML source thật** (Ctrl+Shift+X, không chỉ câu trả lời "đúng/sai") sau khi ghi thẳng vào
+  field trong Add Cards: `<details>`/`<summary>` còn nguyên, màu nền phân cấp đúng
+  (`#eef3fb`/`#f7f2fa`), timestamp tách riêng đúng, escape `&`/`<` đúng, và một số `<details>` có
+  `open=""` phản ánh đúng trạng thái user đã bấm mở trước đó (chứng minh mở/thu gọn hoạt động
+  thật). Implementation đã đổi kiến trúc **3 lần** trước khi đến bản này (xem lịch sử dưới) — bài
+  học quan trọng nhất: 1 câu trả lời AskUserQuestion xác nhận thành công **không đủ** (lần trước
+  user từng chọn nhầm rồi tự sửa lại: "nãy tôi chọn nhầm. Thực ra vẫn bị lỗi không crt V được khi
+  generate xong") — lần này đòi bằng chứng cụ thể (HTML source thật) trước khi đóng task.
+  **Lịch sử đổi kiến trúc (3 vòng):**
+  1. `<style>`+`<script>` nhúng + JS toggle — **fail**: Anki strip toàn bộ `<style>`/`<script>`
+     khi paste (xác nhận qua test thật: dán ra chỉ còn text phẳng, không màu/không thụt lề).
+  2. Inline `style="..."` + `<details>`/`<summary>` thuần — **fail**: lấy đúng HTML source qua
+     Ctrl+Shift+X sau khi paste cho thấy `<details>`/`<summary>` bị bóc hoàn toàn (nội dung bẹt
+     vào parent), và các CSS layout (`margin`/`padding`/`background`/`cursor`/`border-radius`)
+     cũng bị strip khỏi inline style — chỉ `color` (dạng `rgb(...)`) và thẻ `<div>`/`<span>` sống
+     sót. Đây là sanitize ở tầng Chromium/Qt WebEngine paste-into-contenteditable, không phải ở
+     Python (`self.triggerPageAction(QWebEnginePage.WebAction.Paste)` trong `aqt/editor.py` —
+     sanitize nằm trong browser engine, không sửa được từ phía add-on bằng cách đổi HTML).
+  3. **Ghi thẳng vào field, bỏ clipboard/paste hoàn toàn** — user đồng ý hướng này
+     ("Đồng ý — thử hướng ghi thẳng vào field (Recommended)"). UX đổi: user phải click vào field
+     muốn điền TRƯỚC, rồi bấm nút Tree Card, dán text, bấm Generate → HTML ghi thẳng, không cần
+     Ctrl+V. Đây là hướng **đang implement**, chưa verify thật.
+  **Bug đã tìm & fix trong quá trình implement hướng 3:**
+  - `ModuleNotFoundError: No module named 'tree_parser'` — `tree_renderer.py` dùng import tuyệt
+    đối thay vì tương đối; vỡ khi Anki load add-on dưới dạng package. Fix bằng try/except
+    (relative trước, absolute fallback cho pytest). Bài học: pre-verify `importlib.import_module`
+    giả lập phải chạy từ **thư mục gốc repo** (cwd trung lập), không phải từ trong
+    `tree-card-generator/` — chạy từ trong thư mục add-on khiến Python tự thêm cwd vào
+    `sys.path`, che giấu lỗi absolute-import.
+  - `AttributeError: 'Editor' object has no attribute 'nid'` (thật, từ traceback user gửi, Anki
+    25.09.4) — code ban đầu dùng `editor.nid` + `editor.reload_note()`, những attribute/method
+    này **không tồn tại** trong Anki 25.9.4 (Editor dùng `editor.note: Note | None` trực tiếp, và
+    `editor.loadNoteKeepingFocus()` để refresh hiển thị, không có `reload_note()`). **Root cause
+    thật:** venv dev (`tree-card-generator/.venv`) đã cài `aqt`/`anki` bản `26.9` (mới hơn bản
+    thật user đang chạy, `25.9.4`) — `editor.nid`/`reload_note()` là API của bản dev/tương lai,
+    không phải bản user cài. Fix: cài lại venv đúng `aqt==25.9.4 anki==25.9.4` (pin vào
+    `requirements.txt`), sửa `dialog.py` dùng `editor.note`/`editor.loadNoteKeepingFocus()`. Bài
+    học mới: pre-verify simulation chỉ đáng tin nếu venv dev **cùng version** với Anki thật user
+    dùng — luôn `pip show aqt anki` cả 2 phía và pin `requirements.txt` khi bắt đầu add-on mới,
+    không cài "latest" mặc định.
+  - **Bug thật thứ 2 (sau khi fix bug `nid`):** `anki.errors.NotFoundError: ... No such note: '0'`
+    khi bấm Generate trong **Add Cards** (traceback thật từ user). Nguyên nhân: trong Add Cards,
+    `editor.note` tồn tại nhưng `note.id == 0` (note chưa được thêm vào collection — chỉ tồn tại
+    trong bộ nhớ Editor, sẽ được lưu khi user bấm "Add"). Gọi `mw.col.update_note(note)` unconditional
+    tìm note theo id trong DB → không thấy → crash. Phát hiện cách Anki tự xử lý case này bằng cách
+    đọc `Editor._onHtmlEdit()` (chính là logic Ctrl+Shift+X) trong `aqt/editor.py`: nó set
+    `self.note.fields[field] = html` **luôn**, nhưng chỉ gọi lưu (`if not self.addMode:
+    self._save_current_note()`) khi KHÔNG ở Add Cards — vì trong Add Cards, note sẽ được lưu sau
+    bởi luồng "Add" riêng, dùng chính object note đã bị mutate này. Fix: check `editor.addMode`,
+    chỉ gọi `aqt.operations.note.update_note(parent=editor.widget,
+    note=note).run_in_background(initiator=editor)` (API public tương đương
+    `Editor._save_current_note()`, có undo support) khi `not editor.addMode`; luôn gọi
+    `editor.loadNote(focusTo=field_index)` để refresh hiển thị bất kể addMode. Verify bằng cách
+    giả lập cả 2 nhánh (`addMode=True/False`) qua simulation từ repo root, không chỉ đọc code.
+  - **Description:** `QDialog` với `QPlainTextEdit` (nhập text tree) + `QPushButton` "Generate".
+    Bấm Generate: `parse_tree()` → `render_html()` → ghi thẳng vào
+    `editor.note.fields[editor.last_field_index]` → (nếu không phải Add Cards) persist qua
+    `aqt.operations.note.update_note(...)` → `editor.loadNote(focusTo=...)`. `__init__.py` truyền
+    `editor` (không chỉ `parentWindow`) vào `TreeDialog` để dialog có quyền truy cập
+    `note`/`last_field_index`/`addMode`/`widget`.
   - **Acceptance criteria:**
-    - [ ] Nút "Tree Card" (hoặc tên tương tự) hiện trong Editor toolbar.
-    - [ ] Bấm nút → dialog mở, có ô nhập text + nút Generate & Copy.
-    - [ ] Dán text tree mẫu từ SPEC.md vào ô nhập, bấm Generate → clipboard chứa HTML đúng (dán
-      thử ra 1 field thấy đúng cấu trúc, khớp với những gì Task 3-4 đã test).
+    - [ ] Nút "Tree Card" hiện trong Editor toolbar.
+    - [ ] Click vào field muốn điền TRƯỚC, bấm nút → dialog mở, dán text tree, bấm Generate → HTML
+      xuất hiện thẳng trong đúng field đó, không cần Ctrl+V.
+    - [ ] Note chưa lưu lần nào (`editor.note is None`) hoặc chưa từng focus field nào
+      (`last_field_index is None`) → thông báo lỗi rõ ràng, không crash.
   - **Verification:**
-    - [ ] Manual trong Anki thật (bắt buộc — đây là vertical slice hoàn chỉnh của cả plan).
-  - **Dependencies:** Task 2 (cơ chế clipboard đã verify), Task 4 (renderer)
-  - **Files likely touched:** `tree-card-generator/dialog.py`, `tree-card-generator/__init__.py`
+    - [ ] Manual trong Anki thật (bắt buộc). Cần bằng chứng cụ thể (screenshot field sau khi
+      Generate, hoặc HTML source qua Ctrl+Shift+X), không chỉ câu trả lời "đúng"/"sai" đơn giản.
+  - **Dependencies:** Task 4 (renderer)
+  - **Files likely touched:** `tree-card-generator/dialog.py`, `tree-card-generator/__init__.py`,
+    `tree-card-generator/requirements.txt`
   - **Estimated scope:** M
 
 - [x] **Task 6: Manual end-to-end verify đầy đủ với cây mẫu thật** — DONE, gộp chung với vòng
-  test cuối của Task 5 (dùng cùng cây mẫu 6 section đầy đủ). User xác nhận: có màu/thụt lề, bấm
-  tiêu đề mở/thu gọn đúng.
+  verify cuối của Task 5 (dùng đúng cây mẫu 6 section đầy đủ, xác nhận qua HTML source thật).
   - **Description:** Dùng đúng đoạn text tree đầy đủ 6 section trong SPEC.md (không phải bản rút
     gọn), test toàn bộ flow trong Anki thật (profile `IFE-Test`).
   - **Acceptance criteria:**
@@ -179,7 +225,14 @@ sớm nhất có thể (Task 2) trước khi đầu tư code parser/renderer, v�
 
 ### Phase 3: Polish
 
-- [ ] **Task 7: README cho add-on + đóng gói thử `.ankiaddon`**
+- [x] **Task 7: README cho add-on + đóng gói thử `.ankiaddon`** — DONE. README.md viết lại hoàn
+  toàn theo kiến trúc ghi-thẳng-field (đã bỏ mọi hướng dẫn Ctrl+V, UX mới: "click field trước →
+  bấm nút → Generate → xong"), giải thích đủ cả 2 vòng clipboard đã fail + lý do chọn ghi thẳng
+  field. Đóng gói lại `.ankiaddon` bằng `zipfile` với đúng 5 file hiện tại
+  (`manifest.json`, `__init__.py`, `dialog.py`, `tree_parser.py`, `tree_renderer.py`, không dính
+  `tests/`/`.venv/`/`requirements.txt`/`tasks/`/docs). Chưa cài thử `.ankiaddon` riêng vào Anki
+  thật (core logic đã verify đầy đủ qua junction ở Task 5-6 với đúng version Anki thật user dùng —
+  cơ chế install-from-zip của Anki là chuẩn/không đặc thù code, để user tự cài thử nếu muốn).
   - **Description:** Viết `tree-card-generator/README.md` (cách dùng, cú pháp tree input được hỗ
     trợ, giới hạn hiện tại — vd không hỗ trợ tab, chỉ ASCII connector chuẩn). Đóng gói + cài thử.
   - **Acceptance criteria:**

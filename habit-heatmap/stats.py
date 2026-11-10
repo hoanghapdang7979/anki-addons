@@ -35,3 +35,11 @@ def completion_pct(ticked: set[int], start: int, today: int) -> int:
         return 0
     done = sum(1 for d in ticked if start <= d <= today)
     return round(done * 100 / total)
+
+
+def streak_runs(ticked: set[int]) -> dict[int, int]:
+    """For every ticked day, the length of the run of consecutive ticked days ending on it."""
+    runs: dict[int, int] = {}
+    for day in sorted(ticked):
+        runs[day] = runs.get(day - 1, 0) + 1
+    return runs

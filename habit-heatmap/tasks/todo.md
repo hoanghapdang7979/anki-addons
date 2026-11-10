@@ -24,9 +24,22 @@ Chi tiết (acceptance criteria, verification, files): xem [plan.md](./plan.md).
 
 ## Phase 3: Đồng bộ & chống mất chuỗi
 - [x] Task 11: Shadow + gộp 3 chiều + sync nối tiếp — viết lại sau khi user báo sync lúc đúng lúc sai (nguyên nhân: union không lan được bỏ tick; Anki thay cả khối config). 131 test + e2e 15/15
-- [ ] Task 12: Verify sync end-to-end — e2e tự động 15/15 đã đạt; **còn chờ user thử lại trên 2 profile thật** (bản mới cần restart Anki)
+- [x] Task 12: Verify sync end-to-end — DONE: e2e tự động 15/15 + user xác nhận sync hoạt động ổn trên 2 profile thật (sau bản gộp 3 chiều)
 
 **Checkpoint 2:** toàn bộ Success Criteria trong SPEC đạt.
 
 ## Phase 4: Polish
 - [x] Task 13: README + đóng gói `.ankiaddon` — README viết xong; `.ankiaddon` 13 file, bản giải nén qua đủ kịch bản mô phỏng. Cần đóng gói lại nếu Task 12 làm code đổi
+
+## v2 — Review-Heatmap look, notes, tooltip, drag-to-reorder
+- [ ] V2-1 `days.year_grid`/`clamp_year` (thuần, TDD)
+- [ ] V2-2 `themes.py` + `stats.streak_runs`
+- [ ] V2-3 `notes.py`
+- [ ] V2-4 `merge3.merge_habits` + `habits.reorder`
+- [ ] V2-5 Store + shadow + reconcile cho note
+- [ ] V2-6 `render.py` + `assets.py`
+- [ ] V2-7 Nối vào Anki
+- [ ] V2-8 e2e sync
+- [ ] V2-9 README/SPEC + đóng gói + commit/push.
+- [ ] V2-10 Xác nhận trong Anki thật *(user restart Anki)*
+

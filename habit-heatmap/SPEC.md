@@ -28,7 +28,209 @@ sổ hiển thị).
 **User:** chỉ Dang (cá nhân). Chỉ chạy trên Anki desktop (AnkiDroid/AnkiMobile không hiển thị
 heatmap, nhưng dữ liệu vẫn đi theo sync).
 
-## Quyết định kiến trúc quan trọng (đọc trước khi code)
+## v2 — Giao diện kiểu Review Heatmap, note theo ngày, tooltip  *(phần này ưu tiên hơn v1 khi mâu thuẫn)*
+
+> Yêu cầu của user (sau khi sync v1 đã chạy ổn): *"heatmap hiển thị giống add-on Review Heatmap; khi
+> check today cho phép ghi thêm note; có tooltip khi chỉ vào các cell, hiển thị thông tin note và
+> thông tin ngày."* Đã hỏi và chốt 4 điểm (mục v2.1). Tham chiếu giao diện: Review Heatmap
+> (ID 1771074083, đã đọc source: Cal-HeatMap/d3, ô 10px, gap 2px, không bo góc, tuần bắt đầu thứ
+> Hai, nhãn năm, nút ‹ ○ ›, tooltip div riêng).
+
+### v2.1 Quyết định đã chốt (user xác nhận)
+
+1. **Giao diện lấy cả 4 phần:** (a) ô vuông nhỏ sát nhau; (b) nhãn năm + nút điều hướng ‹ ○ ›;
+   (c) dòng thống kê tô màu; (d) bảng màu theo **chủ đề** + độ đậm theo **streak**.
+2. **Luồng note:** bấm **Check today = tick ngay, không hỏi gì**. Có nút nhỏ **Note** cạnh nút
+   Check để thêm/sửa note của hôm nay bất cứ lúc nào trong ngày.
+3. **Giới hạn note: 500 ký tự** (user đã được báo: tối đa ~180 KB/habit/năm nếu note mọi ngày, sync
+   nặng hơn; thực tế thường nhỏ hơn nhiều).
+4. **Tooltip hiện:** ngày đầy đủ + thứ, **trạng thái ngày**, **nội dung note**. (Không hiện vị trí
+   trong chuỗi.)
+5. Đồng bộ v1 đã được user xác nhận hoạt động ổn → **Task 12 của v1 đóng**.
+6. **Xác nhận mặc định:** độ đậm theo streak 5 mức + chấm góc cho ô có note; một thanh điều hướng
+   dùng chung.
+7. **Đổi quy tắc note (user):** note **quá khứ vẫn thêm mới được** (để giải thích vì sao hôm đó
+   Missed). Tick vẫn chỉ hôm nay.
+8. **Kéo thả đổi thứ tự habit** trong phần cài đặt (Tools → Habit Heatmap...), thứ tự = **mức ưu
+   tiên** (trên cùng = ưu tiên cao nhất, cũng là thứ tự hiện trên màn hình deck).
+
+### v2.2 Thiết kế
+
+**Lưới = năm lịch, không còn cửa sổ trượt 53 tuần.** Cột = tuần (thứ Hai đầu tuần), từ tuần chứa
+1/1 đến tuần chứa 31/12 (53 hoặc 54 cột); ô ngoài năm không vẽ. Hiện **cả ngày tương lai** của năm
+(tô xám đậm hơn, như ảnh Review Heatmap) thay vì ẩn. Ô là vuông cố định ~10px, gap 2px, không bo
+góc, lưới canh giữa, `max-width` ≈ cột×12px và **co theo bề rộng** khi cửa sổ hẹp.
+
+**Trạng thái ngày** (hàm thuần `day_status`, dùng cho cả màu ô lẫn tooltip):
+
+| Điều kiện | Trạng thái | Màu ô |
+|---|---|---|
+| `ngày > hôm nay` | Upcoming | xám đậm (rgba 128,128,128,0.40) |
+| `ngày == hôm nay`, đã tick | Done (today) | màu theme + viền |
+| `ngày == hôm nay`, chưa tick | Today - not done yet | xám nhạt + viền |
+| `ngày < ngày tạo habit` | Not started | xám rất nhạt (0.10) |
+| quá khứ, đã tick | Done | màu theme theo streak |
+| quá khứ, chưa tick | Missed | xám nhạt (0.22) |
+
+**Theme + độ đậm theo streak.** 5 theme: `lime`, `olive`, `ice`, `magenta`, `flame` (tên theo Review
+Heatmap), mỗi theme 5 mức đậm dần. Mức của một ô **Done** = độ dài đoạn tick liên tiếp kết thúc
+tại ngày đó: `1 ngày → L1`, `2–3 → L2`, `4–6 → L3`, `7–13 → L4`, `≥14 → L5`. Ô có note có **chấm nhỏ**
+ở góc (không làm đậm màu, để màu chỉ mang một nghĩa là streak). `Habit.color` chuyển nghĩa thành
+**tên theme**; giá trị hex cũ của v1 được ánh xạ về theme theo thứ tự `PALETTE` cũ, không lọt
+thì `lime` — **không ghi lại dữ liệu để migrate**, chỉ đổi cách đọc.
+
+**Điều hướng.** Một thanh `‹ ○ ›` **dùng chung, đặt trên các khối** (như Review Heatmap), điều
+khiển năm đang xem cho mọi habit. `‹` năm trước, `›` năm sau, `○` về năm hiện tại. Giới hạn: không
+vượt quá năm hiện tại; không lùi quá năm tạo habit sớm nhất (nút mờ ở biên). Năm đang xem chỉ lưu
+**trong bộ nhớ** (mặc định năm hiện tại mỗi lần mở Anki). Khi xem năm **không phải hiện tại**: ẩn
+nút Check today / Note của hôm nay; **không** tick được; ô quá khứ vẫn bấm để thêm/sửa note. **Nhãn năm** hiện dưới lưới (chữ nhỏ, xám, canh giữa).
+
+**Dòng thống kê tô màu, canh giữa:** `Current streak: N days   Longest streak: N days   Days done:
+N (P%)`; nhãn chữ thường, **giá trị đậm và tô màu theme (mức đậm nhất)**. Thống kê luôn tính trên
+toàn bộ lịch sử của habit (không phụ thuộc năm đang xem); `P%` giữ nghĩa v1 (từ ngày tạo đến hôm
+nay).
+
+**Note theo ngày.**
+- Gắn với **ngày**, **độc lập với tick** (một ngày Missed vẫn có thể có note giải thích).
+- Thêm/sửa/xoá được note của **hôm nay và mọi ngày quá khứ từ ngày tạo habit trở đi** (kể cả năm
+  cũ khi đang xem năm khác). **Không** có note cho ngày tương lai hoặc ngày trước khi tạo habit.
+  *(Mặc định tôi chọn: "thêm mới" cũng gồm sửa/xoá note đã có của ngày quá khứ — hạn chế lại nếu
+  muốn note quá khứ chỉ viết một lần.)*
+- Cách mở: **hôm nay** — nút **Note** ("Add note"/"Edit note") cạnh nút Check, luôn hiện khi xem
+  năm hiện tại (không còn phụ thuộc đã tick hay chưa). **Ngày quá khứ** — **bấm vào ô** của ngày
+  đó (con trỏ `pointer` ở các ô hợp lệ; ô hôm nay vẫn là tick/bỏ tick như v1).
+- Hộp nhập nhiều dòng của Qt; text **không** đi qua JS/`pycmd`. Lệnh bridge:
+  `habitheatmap:note:<habit_id>:<YYYY-MM-DD>`. Khác `toggle` (không mang ngày), lệnh này **có ngày**
+  nên Python **kiểm chặt**: ISO hợp lệ, `ngày tạo habit <= ngày <= hôm nay` (hôm nay tính phía
+  Python), habit tồn tại và chưa lưu trữ; sai → từ chối + tooltip Anki. Tick vẫn **không bao giờ**
+  nhận ngày từ giao diện.
+- Chuẩn hoá: bỏ khoảng trắng đầu/cuối, `\r\n` → `\n`, bỏ ký tự điều khiển, **cắt ở 500 ký tự** (báo
+  bằng tooltip Anki "Note shortened to 500 characters"). Nội dung rỗng = xoá note.
+- Bỏ tick **giữ nguyên note**.
+- Lưu: key `habitHeatmap.n.<habit_id>` = `{"<date ordinal>": "text", ...}`. Chặn ghi thêm nếu JSON
+  của key vượt **200 000 ký tự** (báo lỗi, không crash).
+- Đồng bộ: thêm `notes`/`base_notes` vào shadow, gộp 3 chiều **theo từng ngày** (`merge_notes`:
+  bên nào đổi so với base thì lấy bên đó; cả hai đổi thì remote thắng), cùng cơ chế `usn`/sync
+  nối tiếp như bitmap. "Delete forever" xoá cả key note.
+
+**Thứ tự habit = mức ưu tiên, kéo thả để đổi.** Trong Tools → Habit Heatmap...: kéo thả các dòng
+(`QListWidget` chế độ `InternalMove`) để đổi thứ tự; mỗi dòng có **số ưu tiên** ("1.", "2.", ...)
+chỉ đếm habit đang dùng; thả xong **lưu ngay** và màn hình deck cập nhật. Giữ nút Move up/down làm
+phương án dùng bàn phím. Màn hình deck vẽ habit đang dùng theo đúng thứ tự này. Habit đã lưu
+trữ hiện mờ, không đánh số.
+**Thứ tự phải sync được:** `merge_habits` hiện luôn lấy thứ tự của remote nên một lần kéo thả bị
+sync đè sẽ mất. Quy tắc mới: nếu thứ tự remote (sau khi lọc các id còn sống) **bằng** thứ tự của
+base thì dùng thứ tự **local**; ngược lại dùng thứ tự remote (cả hai cùng đổi → remote thắng như
+các trường khác); id mới thêm xếp cuối theo thứ tự xuất hiện.
+
+**Tooltip tuỳ biến** (thay `title` mặc định, giống Review Heatmap). Nội dung:
+```
+Wednesday, 11 Nov 2026          (đậm)
+Done today                      (trạng thái, theo bảng trên)
+Ghi chú nhiều dòng của hôm nay  (chỉ khi có note, xuống dòng đúng như đã nhập)
+Click to add a note             (chữ mờ; "Click to edit note" nếu đã có; chỉ ở ô hợp lệ)
+```
+Cách làm: mỗi ô mang `data-day`, `data-status`, `data-note`, `data-noteable`; **một** `<script>` nhỏ, idempotent
+(`window.__hhInit`), dùng uỷ quyền sự kiện `mouseover/mouseout` trên `document`, dựng nội dung
+bằng `textContent` (**không** `innerHTML` → note không thể chèn HTML/JS), đặt tooltip phía trên ô,
+**lật xuống dưới/dịch ngang** khi sát mép, tôn trọng chế độ tối. Mỗi ô vẫn có `title` thuần làm
+**phương án dự phòng**: script gỡ `title` khi khởi tạo thành công, nên nếu JS không chạy thì
+tooltip mặc định của trình duyệt vẫn hiện (không bao giờ hiện hai tooltip).
+
+**`<style>`/`<script>` giờ được phép** (đổi so với v1): CSP chặn script **chỉ áp dụng cho trang
+Editor** (`aqt/mediasrv.py:75-83`, `:822-828`, `PageContext.EDITOR`) — đó là lý do `<style>`/
+`<script>` bị loại khi paste ở tree-card-generator. **Màn hình deck không có CSP** [VERIFIED qua
+source; còn phải chạy thử trong Anki thật, xem Risk-First]. Giới hạn: đúng **một** khối `<style>` và
+**một** khối `<script>` cho cả trang (chèn một lần cho mỗi lần render), mọi class/id có tiền tố
+`hh-`, không ghi đè style của Anki hay add-on khác, không phụ thuộc thư viện ngoài (không d3/CDN).
+
+**Bridge.** Thêm `habitheatmap:note:<id>:<YYYY-MM-DD>` và `habitheatmap:nav:<prev|next|today>`; vẫn xử lý trong
+`webview_did_receive_js_message`, chỉ khi `context` là `DeckBrowser`, id/tham số được kiểm bằng
+regex an toàn, mọi lỗi được bắt (không lọt vào Anki).
+
+### v2.3 Thay đổi code dự kiến
+
+| Module | Thay đổi |
+|---|---|
+| `days.py` | `year_grid(year)` (lưới năm lịch, ô ngoài năm = None), `clamp_year` |
+| `themes.py` *(mới)* | 5 theme × 5 mức, `streak_level(run)`, `resolve_theme(color)` (hex cũ → theme) |
+| `stats.py` | thêm `streak_runs(ticked)` → độ dài đoạn liên tiếp tại mỗi ngày |
+| `notes.py` *(mới)* | `clean_note`, `merge_notes`, `note_day_ok(day, created, today)`, hằng 500/200 000 |
+| `render.py` | viết lại: `day_status`, thanh điều hướng, khối habit mới, dữ liệu ô |
+| `assets.py` *(mới)* | chuỗi CSS + JS tooltip (thuần, test được bằng đọc chuỗi) |
+| `store.py` | `note/set_note(habit, day, text, today)` (kiểm ngày), `delete_data` xoá cả note |
+| `shadow.py`, `reconcile.py` | thêm notes vào shadow + gộp 3 chiều |
+| `deckview.py` | lệnh `nav`, `note` (parse + kiểm ngày); trạng thái năm đang xem; chèn assets một lần |
+| `manage_dialog.py` | chọn theme thay cho chọn hex; **kéo thả đổi thứ tự**, số ưu tiên |
+| `merge3.py` | `merge_habits` gộp thứ tự (local nếu remote không đổi so với base) |
+
+### v2.4 Chiến lược test
+
+- **Unit (pytest, không cần Anki):** `year_grid` (năm nhuận, năm 1/1 rơi vào các thứ khác nhau →
+  53/54 cột, ô ngoài năm), `streak_level`/`streak_runs` (ranh giới 1/2–3/4–6/7–13/14), `day_status`
+  (đủ 6 trạng thái, ranh giới ngày tạo/hôm nay), `resolve_theme` (hex cũ), `clean_note` (cắt 500,
+  `\r\n`, ký tự điều khiển, rỗng), `merge_notes` (một bên đổi, cả hai đổi, xoá), store note (hôm
+  nay và quá khứ hợp lệ; từ chối ngày tương lai / trước ngày tạo / ISO sai / habit không tồn tại
+  hoặc đã lưu trữ; vượt 200 000; giữ khi untick; xoá cùng habit), `merge_habits` thứ tự (local
+  reorder khi remote không đổi; remote reorder; cả hai đổi; id mới/xoá chen vào),
+  reconcile cho notes, `render` (HTML chỉ ô hôm nay có `onclick`; `data-*` đúng; note bị escape
+  trong thuộc tính; có đúng 1 `<style>`/1 `<script>`; nút Check/Note ẩn khi xem năm khác; nút ‹ › mờ
+  ở biên; `title` dự phòng), `assets` (JS dùng `textContent`, không `innerHTML`).
+- **e2e sync (`e2e/e2e_sync.py`):** thêm kịch bản **đổi thứ tự habit lan sang máy kia** và note — thêm/sửa/xoá note lan hai chiều, hai máy
+  sửa note **hai ngày khác nhau** (giữ cả hai), **cùng một ngày** (remote thắng), note qua
+  "Download", note còn khi untick.
+- **Manual trong Anki thật (profile test, có bằng chứng screenshot):** `<style>`/`<script>` chạy
+  được ở màn hình deck; tooltip hiện đúng nội dung và không bị cắt ở mép; chế độ tối; cửa sổ
+  hẹp; điều hướng năm; nút Check/Note; chấm note; **bấm ô quá khứ để thêm note**; **kéo thả đổi thứ tự** ở hộp
+  cài đặt và thứ tự khối trên màn hình deck đổi theo.
+
+### v2.5 Ranh giới (bổ sung)
+
+- **Luôn làm:** ghi note qua Collection API; Python tự tính "hôm nay" cho tick và để kiểm ngày note; dựng
+  tooltip bằng `textContent`; escape mọi note/tên khi đưa vào thuộc tính HTML; ẩn nút
+  Check/Note của hôm nay khi xem năm khác.
+- **Hỏi trước:** lưu note ngoài collection config (vd note Anki ẩn);
+  lịch sử chỉnh sửa note; tăng giới hạn 500 ký tự; thêm thư viện JS ngoài.
+- **Không bao giờ:** nhận **ngày cho tick** hoặc **nội dung note** từ JS/`pycmd` (ngày cho note
+  thì nhận nhưng phải kiểm chặt như trên); cho note ngày tương lai; dùng `innerHTML` với dữ liệu
+  người dùng; thêm CSS/JS chạm ra ngoài vùng `hh-`; tự xoá note.
+
+### v2.6 Tiêu chí hoàn thành (bổ sung)
+
+- Lưới là **năm lịch** với nhãn năm; ô vuông nhỏ sát nhau; ngày tương lai xám đậm; ô hôm nay có
+  viền; nhìn cạnh Review Heatmap thấy cùng "phong cách".
+- Bấm Check today **tick ngay không hỏi**; nút Note mở hộp nhập, lưu được, mở lại thấy note cũ; note
+  quá 500 ký tự bị cắt và có báo.
+- **Bấm một ô ngày quá khứ** (kể cả ở năm khác) mở hộp note và lưu được; ngày tương lai / trước ngày
+  tạo không mở; tick quá khứ vẫn **không thể**.
+- Kéo thả trong Tools → Habit Heatmap... đổi thứ tự ngay, có số ưu tiên, màn hình deck theo thứ tự
+  đó, và thứ tự **đồng bộ** sang máy kia.
+- Rê chuột vào **bất kỳ ô nào** hiện tooltip đúng: ngày + thứ, trạng thái (đủ 6 loại), note nếu có.
+- Độ đậm ô Done đổi theo độ dài chuỗi; ô có note có chấm; đổi theme trong Tools → Habit Heatmap
+  có hiệu lực ngay.
+- `‹ ○ ›` đổi năm đúng, không tick được ở năm khác, không vượt biên; thống kê không đổi theo năm đang xem.
+- Note đồng bộ giữa hai máy (kể cả sửa hai ngày khác nhau cùng lúc); e2e mới + toàn bộ test cũ pass.
+
+### v2.7 Risk-First (làm trước khi viết phần còn lại)
+
+1. **Spike trong Anki thật:** chèn 1 khối `<style>` + 1 `<script>` + vài ô có `data-*` vào màn hình
+   deck, kiểm tra script chạy, tooltip hiện khi rê chuột, đúng ở chế độ tối và cửa sổ hẹp. Nếu
+   **không** chạy được → phương án dự phòng đã có sẵn: dùng `title` mặc định (bỏ tooltip tuỳ biến),
+   phần còn lại của v2 không đổi.
+2. Kích thước thật của dữ liệu note (500 ký tự × nhiều ngày) và thời gian sync — đo bằng e2e với
+   server cục bộ.
+
+### v2.8 Mặc định tôi đã chọn thay user (đổi lại nếu không hợp)
+
+- "Thêm mới note quá khứ" gồm cả **sửa/xoá** note đã có của ngày quá khứ.
+- Note không cần đã tick; nút Note của hôm nay luôn hiện ở năm hiện tại.
+- Bấm ô quá khứ = mở note; bấm ô hôm nay = tick/bỏ tick (như v1).
+- Kéo thả giữ cả nút Move up/down; habit đã lưu trữ không đánh số ưu tiên.
+- Nhãn giao diện tiếng Anh, ngày dạng `Wednesday, 11 Nov 2026`; không có nhãn tháng trên lưới.
+
+---
+
+## v1 — Quyết định kiến trúc quan trọng (đọc trước khi code)
 
 ### 1. Lưu dữ liệu ở **collection config**, không phải file của add-on
 - `col.get_config(key)` / `col.set_config(key, val)` [VERIFIED `anki/collection.py:910-916`].
@@ -212,10 +414,10 @@ def current_streak(ticked: set[int], today_ordinal: int) -> int:
 ## Quyết định đã chốt (user xác nhận)
 
 1. **Cấu hình habit:** dialog riêng trong add-on (menu Tools), danh sách habit lưu trong
-   **collection config** (`habitHeatmap.habits`) để đi theo sync. Không dùng `config.json`.
+   **collection config** (`habitHeatmap.habits`) để đi theo sync. Không dùng `config.json`. *(v2: `Habit.color` giờ là tên theme.)*
 2. **Bỏ tick hôm nay:** **cho phép**. Giới hạn đã biết (union có thể hồi sinh tick đã bỏ nếu máy
    khác vừa sync tick cùng ngày) được chấp nhận.
-3. **Cửa sổ hiển thị:** **53 tuần** (đủ 1 năm, như ảnh tham chiếu), cố định ở v1.
+3. **Cửa sổ hiển thị:** **53 tuần** (đủ 1 năm, như ảnh tham chiếu), cố định ở v1. *(v2: thay bằng năm lịch có điều hướng ‹ ○ ›.)*
 4. **Habit không dùng nữa:** mặc định **Lưu trữ** (ẩn khỏi màn hình deck, **giữ nguyên lịch sử**,
    có thể khôi phục). Ngoài ra có action **Xoá hẳn** (dialog xác nhận, ghi rõ "không hoàn tác"):
    xoá `habitHeatmap.d.<id>`, xoá khỏi `habitHeatmap.habits` **và xoá luôn entry trong shadow** —

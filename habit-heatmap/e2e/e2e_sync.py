@@ -2,7 +2,7 @@
 the real habit-heatmap Store/reconcile. Each Device mimics one Anki profile.
 Touches no real Anki profile or AnkiWeb account (temp dirs, localhost only).
 
-Run from the repo root (takes ~1 minute: operations are spaced 1.1s apart because
+Run from the repo root (takes ~2 minutes: operations are spaced 1.1s apart because
 Anki's config mtime has 1-second resolution):
 
     SYNC_USER1=u:p SYNC_BASE=<empty dir> SYNC_HOST=127.0.0.1 SYNC_PORT=8791         habit-heatmap/.venv/Scripts/python -m anki.syncserver        # in another shell
@@ -26,7 +26,7 @@ import anki.lang
 anki.lang.set_lang("en")
 from anki.collection import Collection
 
-from habits import PALETTE, add_habit, archive_habit, delete_habit, rename_habit
+from habits import PALETTE, add_habit, archive_habit, delete_habit, rename_habit, reorder
 from reconcile import reconcile
 from shadow import ShadowFile
 from store import Store
@@ -97,11 +97,39 @@ class Device:
         time.sleep(1.1)
         self.store.toggle_today(self.hid(), D(k))
 
+    def note(self, day_k, text, today_k):
+        time.sleep(1.1)
+        self.store.set_note(self.hid(), D(day_k), text, D(today_k))
+
+    def notes_view(self):
+        return {
+            (date.fromordinal(int(o)) - BASE).days: t for o, t in self.store.notes(self.hid()).items()
+        }
+
+    def order(self):
+        return [h.name for h in self.store.habits()]
+
+    def reorder(self, names):
+        time.sleep(1.1)
+        by_name = {h.name: h.id for h in self.store.habits()}
+        self.store.save_habits(reorder(self.store.habits(), [by_name[n] for n in names]))
+
 
 def fresh_pair():
     a, b = Device("A"), Device("B")
     a.store.save_habits(add_habit([], "Run", PALETTE[0], D(0).toordinal(), id_factory=lambda: "h_run"))
     a.tick(0)
+    a.full_upload()
+    b.full_download()
+    return a, b
+
+
+def three_habit_pair():
+    a, b = Device("A"), Device("B")
+    habits = []
+    for name, hid in (("Run", "h_run"), ("Read", "h_read"), ("Walk", "h_walk")):
+        habits = add_habit(habits, name, PALETTE[0], D(0).toordinal(), id_factory=lambda hid=hid: hid)
+    a.store.save_habits(habits)
     a.full_upload()
     b.full_download()
     return a, b
@@ -177,6 +205,49 @@ a.full_download()               # server copy replaces the local collection
 check("8a. un-synced tick survives a forced Download (restored from shadow)", a.view() == {"Run": [0, 7]}, a.view())
 converge(a, b)
 check("8b. ...and then reaches B", b.view() == a.view() == {"Run": [0, 7]}, (a.view(), b.view()))
+
+# 9. notes propagate like ticks
+a, b = fresh_pair()
+a.note(1, "felt great", 3); a.sync(); b.sync()
+check("9a. note added on A reaches B", b.notes_view() == {1: "felt great"}, b.notes_view())
+b.note(1, "felt great!!", 3); b.sync(); a.sync(); converge(a, b)
+check("9b. note edited on B reaches A", a.notes_view() == b.notes_view() == {1: "felt great!!"}, (a.notes_view(), b.notes_view()))
+a.note(1, "", 3); a.sync(); b.sync(); converge(a, b)
+check("9c. note deleted on A disappears on B and stays gone", a.notes_view() == b.notes_view() == {}, (a.notes_view(), b.notes_view()))
+
+# 10. notes on different days written on both machines before syncing
+a.note(1, "A-note", 3); b.note(2, "B-note", 3)
+converge(a, b, rounds=3)
+check("10. notes for different days written offline on both -> both kept",
+      a.notes_view() == b.notes_view() == {1: "A-note", 2: "B-note"}, (a.notes_view(), b.notes_view()))
+
+# 11. same day edited on both machines: one wins consistently, nothing is lost silently on one side only
+a.note(1, "mine", 3); b.note(1, "theirs", 3)
+converge(a, b, rounds=3)
+check("11. same day edited on both -> both machines end identical", a.notes_view() == b.notes_view() and set(a.notes_view()) == {1, 2},
+      (a.notes_view(), b.notes_view()))
+
+# 12. an un-synced note survives a forced Download
+a, b = fresh_pair()
+a.note(2, "unsynced", 3)
+a.full_download()
+check("12a. un-synced note survives Download (restored from shadow)", a.notes_view() == {2: "unsynced"}, a.notes_view())
+converge(a, b)
+check("12b. ...and then reaches B", b.notes_view() == {2: "unsynced"}, b.notes_view())
+
+# 13. habit order (priority) propagates
+a, b = three_habit_pair()
+check("13-baseline. B downloaded the order", b.order() == ["Run", "Read", "Walk"], b.order())
+b.reorder(["Walk", "Run", "Read"]); b.sync(); a.sync(); converge(a, b)
+check("13a. reorder on B reaches A", a.order() == b.order() == ["Walk", "Run", "Read"], (a.order(), b.order()))
+a.reorder(["Read", "Walk", "Run"]); a.sync(); b.sync(); converge(a, b)
+check("13b. reorder on A reaches B", a.order() == b.order() == ["Read", "Walk", "Run"], (a.order(), b.order()))
+a.reorder(["Run", "Read", "Walk"]); b.reorder(["Walk", "Read", "Run"])
+converge(a, b, rounds=3)
+check("13c. both reorder offline -> both machines end with the same order", a.order() == b.order() and sorted(a.order()) == ["Read", "Run", "Walk"],
+      (a.order(), b.order()))
+a.reorder(["Walk", "Run", "Read"]); a.sync(); b.sync(); converge(a, b)
+check("13d. a later reorder still wins after a conflict", a.order() == b.order() == ["Walk", "Run", "Read"], (a.order(), b.order()))
 
 print(f"\n{sum(results)}/{len(results)} passed")
 for dev in (a, b, c):

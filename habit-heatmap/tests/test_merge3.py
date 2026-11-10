@@ -149,3 +149,8 @@ def test_local_reorder_survives_a_habit_deleted_remotely():
 def test_locally_added_habit_goes_after_the_local_order():
     base = [h("a"), h("b")]
     assert ids(merge_habits(base, [h("b"), h("a"), h("L")], base)) == ["b", "a", "L"]
+
+
+def test_unknown_base_trusts_the_remote_order():
+    # first sync ever (base not established yet): the server copy is the only reliable order
+    assert ids(merge_habits([], [h("b"), h("a")], [h("a"), h("b")])) == ["a", "b"]

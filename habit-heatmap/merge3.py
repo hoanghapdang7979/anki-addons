@@ -49,7 +49,10 @@ def merge_habits(base: list[Habit], local: list[Habit], remote: list[Habit]) -> 
 
     base_order = [h.id for h in base if h.id in chosen]
     remote_shared = [h.id for h in remote if h.id in chosen and h.id in b]
-    primary = local if remote_shared == [i for i in base_order if i in r] else remote
+    # With no shared base yet (first sync) "the remote order did not change" is meaningless,
+    # so only trust the local order once there is a base to compare the remote against.
+    remote_unchanged = bool(base_order) and remote_shared == [i for i in base_order if i in r]
+    primary = local if remote_unchanged else remote
     order = [h.id for h in primary if h.id in chosen]
     order += [h.id for h in remote if h.id in chosen and h.id not in order]
     order += [h.id for h in local if h.id in chosen and h.id not in order]

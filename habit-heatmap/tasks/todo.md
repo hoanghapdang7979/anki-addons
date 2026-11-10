@@ -1,0 +1,32 @@
+# Todo: Habit Heatmap
+
+Chi tiết (acceptance criteria, verification, files): xem [plan.md](./plan.md).
+
+## Phase 0: Foundation & rủi ro cao nhất
+- [ ] Task 1: Skeleton + venv pin 25.9.4 + khối heatmap tĩnh trên màn hình deck
+- [ ] Task 2: Vòng `pycmd` → `set_config` → refresh (1 habit cứng, tick hôm nay)
+- [ ] Task 3: Spike đồng bộ — config có sync không, merge thế nào *(user chạy sync)*
+
+**Checkpoint 0:** hook/bridge/persist hoạt động + cách config sync đã rõ.
+
+## Phase 1: Logic thuần (TDD)
+- [ ] Task 4: `days.py` (anki_today, lưới 53 tuần)
+- [ ] Task 5: `bitmap.py` (encode/decode, union, toggle_today)
+- [ ] Task 6: `stats.py` (streak, days done, %)
+- [ ] Task 7: `render.py` (khối HTML inline, chỉ ô hôm nay có onclick)
+- [ ] Task 8: `habits.py` (thêm/đổi tên/sắp xếp/lưu trữ/khôi phục/xoá hẳn)
+
+**Checkpoint 1:** pytest pass 100%.
+
+## Phase 2: Tích hợp thật
+- [ ] Task 9: `store.py` + nối render thật (nhiều habit, Python validate "hôm nay")
+- [ ] Task 10: `manage_dialog.py` (Tools → Habit Heatmap, xoá hẳn có xác nhận)
+
+## Phase 3: Đồng bộ & chống mất chuỗi
+- [ ] Task 11: Shadow + union + dọn mồ côi
+- [ ] Task 12: Verify sync end-to-end *(user chạy sync)*
+
+**Checkpoint 2:** toàn bộ Success Criteria trong SPEC đạt.
+
+## Phase 4: Polish
+- [ ] Task 13: README + đóng gói `.ankiaddon`

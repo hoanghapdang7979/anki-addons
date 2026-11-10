@@ -1,0 +1,67 @@
+"""Per-profile local backup of habits and tick bitmaps (a "shadow" of what the
+collection config should contain). Lets us restore ticks if a sync or a full
+download overwrites the config with older data. No aqt/anki imports.
+
+NOTE: an add-on's user_files/ folder is shared by every Anki profile on the
+machine, so callers must give each profile its own file.
+"""
+
+import json
+import logging
+import os
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from pathlib import Path
+
+try:
+    from .bitmap import Bitmap
+    from .habits import Habit, habits_from_json, habits_to_json
+except ImportError:  # pytest: modules are top-level via conftest.py sys.path
+    from bitmap import Bitmap
+    from habits import Habit, habits_from_json, habits_to_json
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ShadowState:
+    habits: list[Habit] = field(default_factory=list)
+    deleted: set[str] = field(default_factory=set)  # tombstones: ids deleted on purpose
+    bitmaps: dict[str, Bitmap] = field(default_factory=dict)
+
+
+class ShadowFile:
+    def __init__(self, path: Path) -> None:
+        self.path = Path(path)
+
+    def load(self) -> ShadowState:
+        if not self.path.exists():
+            return ShadowState()
+        try:
+            raw = json.loads(self.path.read_text(encoding="utf-8"))
+            return ShadowState(
+                habits=habits_from_json(raw.get("habits")),
+                deleted=set(raw.get("deleted", [])),
+                bitmaps={k: Bitmap.from_dict(v) for k, v in raw.get("bitmaps", {}).items()},
+            )
+        except (ValueError, AttributeError, TypeError):
+            corrupt = self.path.with_name(self.path.name + ".corrupt")
+            logger.exception("shadow file unreadable; moved to %s", corrupt)
+            os.replace(self.path, corrupt)
+            return ShadowState()
+
+    def save(self, state: ShadowState) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "habits": habits_to_json(state.habits),
+            "deleted": sorted(state.deleted),
+            "bitmaps": {k: v.to_dict() for k, v in state.bitmaps.items()},
+        }
+        tmp = self.path.with_name(self.path.name + ".tmp")
+        tmp.write_text(json.dumps(payload), encoding="utf-8")
+        os.replace(tmp, self.path)
+
+    def update(self, fn: Callable[[ShadowState], None]) -> None:
+        state = self.load()
+        fn(state)
+        self.save(state)

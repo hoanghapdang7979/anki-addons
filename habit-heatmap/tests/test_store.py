@@ -98,3 +98,55 @@ def test_stored_ids_lists_only_data_keys(store):
     store.col.cfg[HABITS_KEY] = []
     store.col.cfg["somethingElse"] = 1
     assert store.stored_ids() == {"h1", "h2"}
+
+
+# --- shadow integration -------------------------------------------------
+
+from shadow import ShadowFile  # noqa: E402
+
+
+@pytest.fixture
+def shadowed(tmp_path):
+    shadow = ShadowFile(tmp_path / "s.json")
+    return Store(FakeCol(), shadow=shadow), shadow
+
+
+def test_save_habits_mirrors_list_into_shadow(shadowed):
+    store, shadow = shadowed
+    habits = add_habit([], "A", PALETTE[0], T, id_factory=lambda: "h1")
+    store.save_habits(habits)
+    assert shadow.load().habits == habits
+
+
+def test_toggle_today_mirrors_tick_and_untick_into_shadow(shadowed):
+    store, shadow = shadowed
+    store.save_habits(add_habit([], "A", PALETTE[0], T, id_factory=lambda: "h1"))
+    store.toggle_today("h1", TODAY)
+    assert shadow.load().bitmaps["h1"].is_set(T)
+    store.toggle_today("h1", TODAY)
+    assert not shadow.load().bitmaps["h1"].is_set(T)
+
+
+def test_delete_data_writes_tombstone_and_clears_shadow_entry(shadowed):
+    store, shadow = shadowed
+    store.save_habits(add_habit([], "A", PALETTE[0], T, id_factory=lambda: "h1"))
+    store.toggle_today("h1", TODAY)
+    store.save_habits([])
+    store.delete_data("h1")
+    state = shadow.load()
+    assert "h1" in state.deleted
+    assert "h1" not in state.bitmaps
+    assert DATA_PREFIX + "h1" not in store.col.cfg
+
+
+def test_shadow_write_failure_never_blocks_ticking(tmp_path):
+    class BrokenShadow:
+        def update(self, fn):
+            raise OSError("disk full")
+
+    store = Store(FakeCol(), shadow=BrokenShadow())
+    store.col.cfg[HABITS_KEY] = [
+        {"id": "h1", "name": "A", "color": PALETTE[0], "created": T, "archived": False}
+    ]
+    assert store.toggle_today("h1", TODAY).is_set(T)
+    assert store.bitmap("h1").is_set(T)

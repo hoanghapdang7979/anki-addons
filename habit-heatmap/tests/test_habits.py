@@ -134,3 +134,9 @@ def test_reorder_does_not_mutate_the_input():
 def test_priority_numbers_count_only_active_habits_in_list_order():
     habits = archive_habit(make("A", "B", "C"), "h1")
     assert priority_numbers(habits) == {"h0": 1, "h2": 2}
+
+
+def test_default_palette_only_contains_known_theme_names():
+    from themes import THEMES
+
+    assert PALETTE and all(name in THEMES for name in PALETTE)

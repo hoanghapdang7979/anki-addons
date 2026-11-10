@@ -1,19 +1,26 @@
-"""Tools -> Habit Heatmap: add, rename, recolor, reorder, archive/restore and
-permanently delete habits. UI only; every change goes through the pure
-operations in habits.py and is saved via Store.
+"""Tools -> Habit Heatmap: add, rename, pick a colour theme, reorder by drag and
+drop (the order is the priority), archive/restore and permanently delete habits.
+UI only; every change goes through the pure operations in habits.py and is
+saved via Store.
 """
 
 import logging
 
 import aqt
 from aqt.qt import (
+    QAbstractItemView,
     QAction,
+    QBrush,
+    QColor,
     QDialog,
     QHBoxLayout,
     QInputDialog,
+    QLabel,
     QListWidget,
     QMessageBox,
     QPushButton,
+    Qt,
+    QTimer,
     QVBoxLayout,
 )
 from aqt.utils import tooltip
@@ -27,28 +34,36 @@ from .habits import (
     archive_habit,
     delete_habit,
     move_habit,
+    priority_numbers,
     recolor_habit,
     rename_habit,
+    reorder,
     restore_habit,
 )
+from .themes import THEME_NAMES, resolve_theme
 
 logger = logging.getLogger(__name__)
 
 _dialog: "ManageDialog | None" = None
+_ROLE_ID = 256  # Qt.ItemDataRole.UserRole
 
 
 class ManageDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Habit Heatmap - manage habits")
-        self.resize(420, 360)
+        self.resize(440, 420)
         self._store = make_store()
         self._list = QListWidget(self)
+        self._list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self._list.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self._list.model().rowsMoved.connect(self._on_rows_moved)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Drag rows to change priority (top = highest).", self))
         layout.addWidget(self._list)
         for row in (
-            [("Add", self._add), ("Rename", self._rename), ("Color", self._recolor)],
+            [("Add", self._add), ("Rename", self._rename), ("Color theme", self._recolor)],
             [("Move up", lambda: self._move(-1)), ("Move down", lambda: self._move(1))],
             [("Archive / Restore", self._toggle_archive), ("Delete forever", self._delete)],
         ):
@@ -67,7 +82,7 @@ class ManageDialog(QDialog):
         item = self._list.currentItem()
         if item is None:
             return None
-        habit_id = item.data(256)  # Qt.ItemDataRole.UserRole
+        habit_id = item.data(_ROLE_ID)
         return next((h for h in self._habits() if h.id == habit_id), None)
 
     def _reload(self, keep_id: str | None = None) -> None:
@@ -78,9 +93,14 @@ class ManageDialog(QDialog):
             logger.exception("habit list is unreadable")
             tooltip("Habit list is unreadable - left untouched.")
             return
+        numbers = priority_numbers(habits)
         for i, h in enumerate(habits):
-            self._list.addItem(f"{h.name}  [archived]" if h.archived else h.name)
-            self._list.item(i).setData(256, h.id)
+            if h.archived:
+                self._list.addItem(f"{h.name}  [archived]")
+                self._list.item(i).setForeground(QBrush(QColor(128, 128, 128)))
+            else:
+                self._list.addItem(f"{numbers[h.id]}. {h.name}")
+            self._list.item(i).setData(_ROLE_ID, h.id)
             if h.id == keep_id:
                 self._list.setCurrentRow(i)
 
@@ -88,6 +108,16 @@ class ManageDialog(QDialog):
         self._store.save_habits(habits)
         self._reload(keep_id)
         aqt.mw.deckBrowser.refresh()
+
+    def _on_rows_moved(self, *_args) -> None:
+        # Qt is still inside the drop; rebuild the list once it has finished.
+        QTimer.singleShot(0, self._apply_list_order)
+
+    def _apply_list_order(self) -> None:
+        """Persist the order the user just dragged the rows into."""
+        selected = self._selected()
+        ids = [self._list.item(i).data(_ROLE_ID) for i in range(self._list.count())]
+        self._commit(reorder(self._habits(), ids), selected.id if selected else None)
 
     def _add(self) -> None:
         name, ok = QInputDialog.getText(self, "Add habit", "Name:")
@@ -118,10 +148,10 @@ class ManageDialog(QDialog):
         habit = self._selected()
         if habit is None:
             return
-        current = PALETTE.index(habit.color) if habit.color in PALETTE else 0
-        color, ok = QInputDialog.getItem(self, "Habit color", "Color:", PALETTE, current, False)
+        current = THEME_NAMES.index(resolve_theme(habit.color))
+        theme, ok = QInputDialog.getItem(self, "Color theme", "Theme:", THEME_NAMES, current, False)
         if ok:
-            self._commit(recolor_habit(self._habits(), habit.id, color), habit.id)
+            self._commit(recolor_habit(self._habits(), habit.id, theme), habit.id)
 
     def _move(self, delta: int) -> None:
         habit = self._selected()
@@ -143,8 +173,8 @@ class ManageDialog(QDialog):
         answer = QMessageBox.question(
             self,
             "Delete forever",
-            f"Permanently delete '{habit.name}' and ALL of its history?\n\n"
-            "This cannot be undone. (Use Archive to hide it but keep the history.)",
+            f"Permanently delete '{habit.name}' and ALL of its history and notes?\n\n"
+            "This cannot be undone. (Use Archive to hide it but keep everything.)",
             yes | no,
             no,
         )

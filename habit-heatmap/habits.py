@@ -7,7 +7,9 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 
-PALETTE = ["#40c463", "#30a14e", "#216e39", "#4c8bf5", "#a371f7", "#f78166", "#e3b341"]
+# Default colours handed to new habits, in turn. Habit.color holds a theme name
+# (see themes.py); hex values written by v1 are mapped to a theme when read.
+PALETTE = ["lime", "ice", "flame", "magenta", "olive"]
 
 
 @dataclass(frozen=True)

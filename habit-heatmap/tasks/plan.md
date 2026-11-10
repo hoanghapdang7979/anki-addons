@@ -139,3 +139,14 @@ Hai rủi ro lớn nhất chưa verify: (1) hook deck browser + `pycmd` bridge +
 
 - Bảng màu cố định hay hex tự do; có nút lên/xuống (mặc định: bảng màu cố định + có lên/xuống) —
   quyết trong Task 10, không chặn các task trước.
+
+## Ghi chú thực thi (autopilot)
+
+- Task 4–8 xong theo TDD (RED → GREEN, 68 test). Task 7 đã nhìn thật qua trình duyệt (lưới 53
+  cột co theo chiều rộng, màu riêng từng habit).
+- Task 1–2: code spike xong; **pre-verify bằng `aqt` 25.9.4 thật** (đăng ký hook thật, mô phỏng
+  vòng click → `set_config` → `refresh`, message lạ/sai context/id lạ đều không bị nuốt). Kỹ thuật
+  mô phỏng: chạy từ repo root với `python -I`; import `aqt.deckbrowser` ngoài Anki cần
+  `anki.lang.set_lang("en")` trước, và venv cần `pywin32` (đã thêm vào `requirements.txt`).
+- Chưa tick Task 1–3: cần user cài Junction vào `addons21` (autopilot không tự làm) và xem/bấm
+  trong Anki thật; Task 3 cần user tự sync AnkiWeb.

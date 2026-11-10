@@ -3,20 +3,20 @@
 Chi tiết (acceptance criteria, verification, files): xem [plan.md](./plan.md).
 
 ## Phase 0: Foundation & rủi ro cao nhất
-- [ ] Task 1: Skeleton + venv pin 25.9.4 + khối heatmap tĩnh trên màn hình deck
-- [ ] Task 2: Vòng `pycmd` → `set_config` → refresh (1 habit cứng, tick hôm nay)
+- [ ] Task 1: Skeleton + venv pin 25.9.4 + khối heatmap trên màn hình deck — **code xong + pre-verify, chờ user xem trong Anki thật**
+- [ ] Task 2: Vòng `pycmd` → `set_config` → refresh (1 habit cứng, tick hôm nay) — **code xong + pre-verify, chờ user bấm thử trong Anki thật**
 - [ ] Task 3: Spike đồng bộ — config có sync không, merge thế nào *(user chạy sync)*
 
 **Checkpoint 0:** hook/bridge/persist hoạt động + cách config sync đã rõ.
 
 ## Phase 1: Logic thuần (TDD)
-- [ ] Task 4: `days.py` (anki_today, lưới 53 tuần)
-- [ ] Task 5: `bitmap.py` (encode/decode, union, toggle_today)
-- [ ] Task 6: `stats.py` (streak, days done, %)
-- [ ] Task 7: `render.py` (khối HTML inline, chỉ ô hôm nay có onclick)
-- [ ] Task 8: `habits.py` (thêm/đổi tên/sắp xếp/lưu trữ/khôi phục/xoá hẳn)
+- [x] Task 4: `days.py` (anki_today, lưới 53 tuần)
+- [x] Task 5: `bitmap.py` (encode/decode, union, toggle_today)
+- [x] Task 6: `stats.py` (streak, days done, %)
+- [x] Task 7: `render.py` (khối HTML inline, chỉ ô hôm nay có onclick)
+- [x] Task 8: `habits.py` (thêm/đổi tên/sắp xếp/lưu trữ/khôi phục/xoá hẳn)
 
-**Checkpoint 1:** pytest pass 100%.
+**Checkpoint 1:** pytest pass 100% — ✅ 68/68.
 
 ## Phase 2: Tích hợp thật
 - [ ] Task 9: `store.py` + nối render thật (nhiều habit, Python validate "hôm nay")

@@ -228,6 +228,24 @@ regex an toàn, mọi lỗi được bắt (không lọt vào Anki).
 - Kéo thả giữ cả nút Move up/down; habit đã lưu trữ không đánh số ưu tiên.
 - Nhãn giao diện tiếng Anh, ngày dạng `Wednesday, 11 Nov 2026`; không có nhãn tháng trên lưới.
 
+### v2.9 Kết quả xác minh khi xây (autopilot)
+
+- **Unit:** 308 test pass (thuần Python, không cần Anki).
+- **Giao diện thật trong Chromium** (cùng engine với QtWebEngine của Anki): lưới năm, 4 theme, màu
+  đậm dần theo streak, chấm note, ô hôm nay có viền, ngày tương lai xám đậm, tooltip (ngày, trạng
+  thái, note nhiều dòng, dòng gợi ý) và `<script>` idempotent chạy đúng.
+- **Mô phỏng với `aqt` 25.9.4 + Qt thật (offscreen), 31 bước:** kéo thả thật qua model của
+  `QListWidget` (`moveRow` → `rowsMoved`) lưu đúng thứ tự và đánh số lại; lệnh `toggle/note/nav` qua hook
+  thật; ngày tương lai / trước ngày tạo / ISO sai / habit lạ / lệnh dị dạng đều bị từ chối; huỷ hộp
+  thoại giữ nguyên note; note > 500 ký tự bị cắt + báo; điều hướng năm bị kẹp ở biên; xoá hẳn xoá cả
+  key note; lỗi render/lệnh không lọt ra ngoài.
+- **e2e sync 27/27** (collection thật + `anki.syncserver` cục bộ): gồm note và thứ tự habit. e2e
+  bắt được một lỗi: khi chưa có `base` (sync lần đầu), điều kiện "thứ tự remote không đổi" luôn đúng
+  một cách vô nghĩa nên máy kia giữ thứ tự cũ rồi đẩy ngược lại → sửa: chưa có `base` thì tin thứ tự
+  remote.
+- **Chưa xác nhận trong Anki thật:** `<style>`/`<script>` chạy ở màn hình deck, tooltip ở chế độ tối
+  / cửa sổ hẹp, kéo thả bằng chuột thật. Cần user restart Anki (Task V2-10).
+
 ---
 
 ## v1 — Quyết định kiến trúc quan trọng (đọc trước khi code)

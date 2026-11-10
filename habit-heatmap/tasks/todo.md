@@ -32,14 +32,14 @@ Chi tiết (acceptance criteria, verification, files): xem [plan.md](./plan.md).
 - [x] Task 13: README + đóng gói `.ankiaddon` — README viết xong; `.ankiaddon` 13 file, bản giải nén qua đủ kịch bản mô phỏng. Cần đóng gói lại nếu Task 12 làm code đổi
 
 ## v2 — Review-Heatmap look, notes, tooltip, drag-to-reorder
-- [ ] V2-1 `days.year_grid`/`clamp_year` (thuần, TDD)
-- [ ] V2-2 `themes.py` + `stats.streak_runs`
-- [ ] V2-3 `notes.py`
-- [ ] V2-4 `merge3.merge_habits` + `habits.reorder`
-- [ ] V2-5 Store + shadow + reconcile cho note
-- [ ] V2-6 `render.py` + `assets.py`
-- [ ] V2-7 Nối vào Anki
-- [ ] V2-8 e2e sync
-- [ ] V2-9 README/SPEC + đóng gói + commit/push.
+- [x] V2-1 `days.year_grid`/`clamp_year` (thuần, TDD)
+- [x] V2-2 `themes.py` + `stats.streak_runs`
+- [x] V2-3 `notes.py`
+- [x] V2-4 `merge3.merge_habits` + `habits.reorder`
+- [x] V2-5 Store + shadow + reconcile cho note
+- [x] V2-6 `render.py` + `assets.py`
+- [x] V2-7 Nối vào Anki
+- [x] V2-8 e2e sync
+- [x] V2-9 README/SPEC + đóng gói + commit/push — DONE
 - [ ] V2-10 Xác nhận trong Anki thật *(user restart Anki)*
 

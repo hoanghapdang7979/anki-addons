@@ -178,25 +178,25 @@ theo source, chưa thử thật). Cần user restart Anki để xem → tôi d�
 
 ## Task list
 
-- [ ] **V2-1 `days.year_grid`/`clamp_year`** (thuần, TDD) — lưới năm lịch (tuần bắt đầu thứ Hai,
+- [x] **V2-1 `days.year_grid`/`clamp_year`** (thuần, TDD) — lưới năm lịch (tuần bắt đầu thứ Hai,
   53/54 cột, ô ngoài năm = None). Bỏ `build_grid` cũ. **AC:** năm nhuận; 1/1 rơi vào cả 7 thứ; ô
   ngoài năm None; `clamp_year` ở biên.
-- [ ] **V2-2 `themes.py` + `stats.streak_runs`** — 5 theme × 5 mức, `streak_level`
+- [x] **V2-2 `themes.py` + `stats.streak_runs`** — 5 theme × 5 mức, `streak_level`
   (1/2–3/4–6/7–13/≥14), `resolve_theme` (hex v1 → theme), độ dài đoạn tick tại mỗi ngày.
-- [ ] **V2-3 `notes.py`** — `clean_note` (cắt 500, `\r\n`, ký tự điều khiển), `merge_notes` (3 chiều
+- [x] **V2-3 `notes.py`** — `clean_note` (cắt 500, `\r\n`, ký tự điều khiển), `merge_notes` (3 chiều
   theo ngày), `note_day_ok(day, created, today)`.
-- [ ] **V2-4 `merge3.merge_habits` + `habits.reorder`** — gộp thứ tự (local nếu thứ tự tương đối của
+- [x] **V2-4 `merge3.merge_habits` + `habits.reorder`** — gộp thứ tự (local nếu thứ tự tương đối của
   remote không đổi so với base), `reorder(habits, ids)`, số ưu tiên.
-- [ ] **V2-5 Store + shadow + reconcile cho note** — `Store.notes/set_note` (kiểm ngày, habit còn
+- [x] **V2-5 Store + shadow + reconcile cho note** — `Store.notes/set_note` (kiểm ngày, habit còn
   dùng, 200 000 ký tự), `delete_data` xoá cả note, shadow có `notes/base_notes`, reconcile gộp note.
-- [ ] **V2-6 `render.py` + `assets.py`** — `day_status`, thanh ‹ ○ ›, khối habit mới (lưới năm, màu
+- [x] **V2-6 `render.py` + `assets.py`** — `day_status`, thanh ‹ ○ ›, khối habit mới (lưới năm, màu
   theo streak, chấm note, ô tương lai xám đậm, nút Check/Note, nhãn năm, thống kê tô màu), dữ liệu
   `data-*`, `title` dự phòng, đúng 1 `<style>` + 1 `<script>` (tooltip bằng `textContent`).
-- [ ] **V2-7 Nối vào Anki** — `deckview` (nav, note + hộp nhập, năm đang xem, assets một lần),
+- [x] **V2-7 Nối vào Anki** — `deckview` (nav, note + hộp nhập, năm đang xem, assets một lần),
   `manage_dialog` (chọn theme, kéo thả đổi thứ tự, số ưu tiên). Mô phỏng với `aqt` thật.
-- [ ] **V2-8 e2e sync** — thêm kịch bản đổi thứ tự lan sang máy kia, note thêm/sửa/xoá lan hai chiều,
+- [x] **V2-8 e2e sync** — thêm kịch bản đổi thứ tự lan sang máy kia, note thêm/sửa/xoá lan hai chiều,
   hai máy sửa note hai ngày khác nhau / cùng ngày, note qua Download, note còn khi untick.
-- [ ] **V2-9 README/SPEC + đóng gói + commit/push.**
+- [x] **V2-9 README/SPEC + đóng gói + commit/push.**
 - [ ] **V2-10 Xác nhận trong Anki thật** *(user restart Anki)* — script/tooltip chạy, chế độ tối, cửa sổ
   hẹp, điều hướng năm, bấm ô quá khứ thêm note, kéo thả.
 

@@ -34,3 +34,26 @@ def build_grid(today: date, weeks: int = GRID_WEEKS) -> list[list[date | None]]:
             column.append(cell if cell <= today else None)
         grid.append(column)
     return grid
+
+
+def year_grid(year: int) -> list[list[date | None]]:
+    """Calendar-year grid: one column per week (Monday first), 7 rows, from the
+    week containing Jan 1 to the week containing Dec 31. Cells outside the year are None."""
+    first = date(year, 1, 1)
+    last = date(year, 12, 31)
+    monday = first - timedelta(days=first.weekday())
+    sunday = last + timedelta(days=6 - last.weekday())
+    weeks = ((sunday - monday).days + 1) // 7
+    grid: list[list[date | None]] = []
+    for w in range(weeks):
+        column: list[date | None] = []
+        for d in range(7):
+            cell = monday + timedelta(weeks=w, days=d)
+            column.append(cell if first <= cell <= last else None)
+        grid.append(column)
+    return grid
+
+
+def clamp_year(year: int, min_year: int, max_year: int) -> int:
+    """Clamp into [min_year, max_year]; if the range is inverted, max_year wins."""
+    return max(min(year, max_year), min(min_year, max_year))

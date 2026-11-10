@@ -1,6 +1,8 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
-from days import GRID_WEEKS, anki_today, build_grid
+import pytest
+
+from days import anki_today, clamp_year, year_grid
 
 
 def _ts(y, m, d, hh, mm=0):
@@ -25,49 +27,71 @@ def test_anki_today_crosses_year_boundary():
     assert anki_today(_ts(2026, 1, 1, 4)) == date(2025, 12, 31)
 
 
-def test_grid_shape_is_53_columns_of_7_rows():
-    grid = build_grid(date(2026, 11, 11))
-    assert GRID_WEEKS == 53
-    assert len(grid) == 53
+def _days(grid):
+    return [c for col in grid for c in col if c is not None]
+
+
+@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027])
+def test_year_grid_covers_every_day_of_the_year_exactly_once_in_order(year):
+    days = _days(year_grid(year))
+    last = date(year, 12, 31)
+    assert days[0] == date(year, 1, 1) and days[-1] == last
+    assert len(days) == (last - date(year, 1, 1)).days + 1
+    assert all((b - a).days == 1 for a, b in zip(days, days[1:]))
+
+
+@pytest.mark.parametrize("year", range(2018, 2032))
+def test_year_grid_has_53_or_54_columns_of_7_rows(year):
+    grid = year_grid(year)
+    assert len(grid) in (53, 54)
     assert all(len(col) == 7 for col in grid)
 
 
-def test_grid_today_is_in_last_column_at_its_weekday_row():
-    today = date(2026, 11, 11)  # Wednesday
-    grid = build_grid(today)
-    assert grid[-1][today.weekday()] == today
+def test_year_grid_rows_are_weekdays_monday_first():
+    for col in year_grid(2026):
+        for row, cell in enumerate(col):
+            if cell is not None:
+                assert cell.weekday() == row
 
 
-def test_grid_cells_after_today_in_last_column_are_none():
-    today = date(2026, 11, 11)  # Wednesday => rows 3..6 are future
-    grid = build_grid(today)
-    assert [c is None for c in grid[-1]] == [False, False, False, True, True, True, True]
+def test_year_grid_cells_outside_the_year_are_none():
+    grid = year_grid(2026)  # Jan 1 2026 is a Thursday -> Mon-Wed of the first column are None
+    assert [c is None for c in grid[0][:3]] == [True, True, True]
+    assert grid[0][3] == date(2026, 1, 1)
+    assert [c is None for c in grid[-1][4:]] == [True, True, True]  # Dec 31 2026 is a Thursday
+    assert grid[-1][3] == date(2026, 12, 31)
 
 
-def test_grid_when_today_is_monday_only_first_row_filled_in_last_column():
-    today = date(2026, 11, 9)  # Monday
-    grid = build_grid(today)
-    assert grid[-1][0] == today
-    assert all(c is None for c in grid[-1][1:])
+def test_year_grid_leap_year_has_feb_29():
+    assert date(2024, 2, 29) in _days(year_grid(2024))
+    assert date(2023, 2, 28) in _days(year_grid(2023))
+    assert len(_days(year_grid(2023))) == 365
 
 
-def test_grid_when_today_is_sunday_last_column_is_full():
-    today = date(2026, 11, 15)  # Sunday
-    grid = build_grid(today)
-    assert all(c is not None for c in grid[-1])
-    assert grid[-1][6] == today
+def test_year_grid_year_starting_on_monday_has_no_leading_blanks():
+    assert date(2024, 1, 1).weekday() == 0
+    assert year_grid(2024)[0][0] == date(2024, 1, 1)
 
 
-def test_grid_first_cell_is_monday_52_weeks_before_this_weeks_monday():
-    today = date(2026, 11, 11)
-    grid = build_grid(today)
-    first = grid[0][0]
-    assert first.weekday() == 0
-    assert (date(2026, 11, 9) - first).days == 52 * 7
+def test_year_grid_year_ending_on_sunday_has_no_trailing_blanks():
+    assert date(2023, 12, 31).weekday() == 6
+    assert year_grid(2023)[-1][-1] == date(2023, 12, 31)
 
 
-def test_grid_dates_are_contiguous_in_column_major_order():
-    grid = build_grid(date(2026, 11, 11))
-    flat = [c for col in grid for c in col if c is not None]
-    assert all((b - a).days == 1 for a, b in zip(flat, flat[1:]))
-    assert len(flat) == 52 * 7 + date(2026, 11, 11).weekday() + 1
+def test_year_grid_first_column_starts_on_a_monday_week_that_contains_jan_1():
+    first = year_grid(2026)[0]
+    jan1 = date(2026, 1, 1)
+    monday = jan1 - timedelta(days=jan1.weekday())
+    assert [(c - monday).days if c else None for c in first] == [None, None, None, 3, 4, 5, 6]
+
+
+@pytest.mark.parametrize(
+    "year,lo,hi,expected",
+    [(2026, 2024, 2026, 2026), (2027, 2024, 2026, 2026), (2020, 2024, 2026, 2024), (2025, 2025, 2025, 2025)],
+)
+def test_clamp_year(year, lo, hi, expected):
+    assert clamp_year(year, lo, hi) == expected
+
+
+def test_clamp_year_when_min_exceeds_max_returns_max():
+    assert clamp_year(2000, 2030, 2026) == 2026

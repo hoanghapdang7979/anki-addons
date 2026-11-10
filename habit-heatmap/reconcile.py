@@ -17,12 +17,14 @@ try:
     from .bitmap import Bitmap
     from .habits import habits_to_json
     from .merge3 import merge_bitmap, merge_habits
-    from .store import DATA_PREFIX, HABITS_KEY, Store
+    from .notes import merge_notes
+    from .store import DATA_PREFIX, HABITS_KEY, NOTES_PREFIX, Store
 except ImportError:  # pytest: modules are top-level via conftest.py sys.path
     from bitmap import Bitmap
     from habits import habits_to_json
     from merge3 import merge_bitmap, merge_habits
-    from store import DATA_PREFIX, HABITS_KEY, Store
+    from notes import merge_notes
+    from store import DATA_PREFIX, HABITS_KEY, NOTES_PREFIX, Store
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +71,32 @@ def reconcile(store: Store) -> bool:
             state.base_bitmaps[habit.id] = result
         state.bitmaps[habit.id] = result
 
-    # Forget shadow entries of habits that are gone (the config data key, if any, is left alone).
+        notes_key = NOTES_PREFIX + habit.id
+        try:
+            remote_notes = store.notes(habit.id)
+        except ValueError:
+            logger.exception("notes for %s unreadable; left untouched", habit.id)
+            continue
+        merged_notes = merge_notes(
+            state.base_notes.get(habit.id, {}), state.notes.get(habit.id, {}), remote_notes
+        )
+        notes_changed = merged_notes != remote_notes
+        if notes_changed:
+            store.col.set_config(notes_key, merged_notes)
+            wrote = True
+        if not notes_changed and not store.is_pending(notes_key):
+            state.base_notes[habit.id] = merged_notes
+        state.notes[habit.id] = merged_notes
+
+    # Forget shadow entries of habits that are gone (the config keys, if any, are left alone).
     for stale in set(state.bitmaps) - kept:
         del state.bitmaps[stale]
     for stale in set(state.base_bitmaps) - kept:
         del state.base_bitmaps[stale]
+    for stale in set(state.notes) - kept:
+        del state.notes[stale]
+    for stale in set(state.base_notes) - kept:
+        del state.base_notes[stale]
 
     store.shadow.save(state)
     return wrote

@@ -5,20 +5,24 @@ module needs no aqt/anki import and is unit-testable with a fake.
 Config rides AnkiWeb sync, so values are kept tiny (see bitmap.py).
 """
 
+import json
 import logging
 from datetime import date
 
 try:
     from .bitmap import Bitmap, toggle_today as toggle_bitmap_today
     from .habits import Habit, active, habits_from_json, habits_to_json
+    from .notes import MAX_KEY_CHARS, NoteStorageFull, clean_note, note_day_ok
 except ImportError:  # pytest: modules are top-level via conftest.py sys.path
     from bitmap import Bitmap, toggle_today as toggle_bitmap_today
     from habits import Habit, active, habits_from_json, habits_to_json
+    from notes import MAX_KEY_CHARS, NoteStorageFull, clean_note, note_day_ok
 
 logger = logging.getLogger(__name__)
 
 HABITS_KEY = "habitHeatmap.habits"
 DATA_PREFIX = "habitHeatmap.d."
+NOTES_PREFIX = "habitHeatmap.n."
 
 
 class Store:
@@ -60,13 +64,49 @@ class Store:
         self._mirror(lambda state: state.bitmaps.__setitem__(habit_id, updated))
         return updated
 
+    def notes(self, habit_id: str) -> dict[str, str]:
+        """{date ordinal (as str): note}. Raises ValueError on a malformed value."""
+        raw = self.col.get_config(NOTES_PREFIX + habit_id)
+        if raw is None:
+            return {}
+        if not isinstance(raw, dict) or not all(
+            isinstance(k, str) and isinstance(v, str) for k, v in raw.items()
+        ):
+            raise ValueError(f"malformed notes for {habit_id}")
+        return dict(raw)
+
+    def set_note(self, habit_id: str, day: date, text: str, today: date) -> bool:
+        """Set (or, for blank text, delete) the note of `day`. Returns True if the text
+        was shortened. Raises KeyError for an unknown/archived habit, ValueError for a day
+        outside [habit creation, today] or a corrupt stored value, NoteStorageFull when the
+        habit's notes would exceed the size cap. Nothing is written on any error."""
+        habit = next((h for h in active(self.habits()) if h.id == habit_id), None)
+        if habit is None:
+            raise KeyError(habit_id)
+        if not note_day_ok(day, habit.created, today):
+            raise ValueError(f"day {day.isoformat()} is outside the allowed range")
+        cleaned, truncated = clean_note(text)
+        notes = self.notes(habit_id)
+        day_key = str(day.toordinal())
+        if cleaned:
+            notes[day_key] = cleaned
+        else:
+            notes.pop(day_key, None)
+        if len(json.dumps(notes, ensure_ascii=False)) > MAX_KEY_CHARS:
+            raise NoteStorageFull(habit_id)
+        self.col.set_config(NOTES_PREFIX + habit_id, notes)
+        self._mirror(lambda state: state.notes.__setitem__(habit_id, dict(notes)))
+        return truncated
+
     def delete_data(self, habit_id: str) -> None:
         """Permanent deletion. The local shadow forgets the habit but keeps its base
         entry, which is how the merge later knows this was a deliberate removal."""
         self.col.remove_config(DATA_PREFIX + habit_id)
+        self.col.remove_config(NOTES_PREFIX + habit_id)
 
         def forget(state) -> None:
             state.bitmaps.pop(habit_id, None)
+            state.notes.pop(habit_id, None)
             state.habits = [h for h in state.habits if h.id != habit_id]
 
         self._mirror(forget)

@@ -33,6 +33,17 @@ class ShadowState:
     bitmaps: dict[str, Bitmap] = field(default_factory=dict)
     base_habits: list[Habit] = field(default_factory=list)
     base_bitmaps: dict[str, Bitmap] = field(default_factory=dict)
+    notes: dict[str, dict[str, str]] = field(default_factory=dict)
+    base_notes: dict[str, dict[str, str]] = field(default_factory=dict)
+
+
+def _notes_from_json(raw) -> dict[str, dict[str, str]]:
+    if not raw:
+        return {}
+    return {
+        str(hid): {str(day): str(text) for day, text in notes.items()}
+        for hid, notes in raw.items()
+    }
 
 
 class ShadowFile:
@@ -51,6 +62,8 @@ class ShadowFile:
                 base_bitmaps={
                     k: Bitmap.from_dict(v) for k, v in raw.get("base_bitmaps", {}).items()
                 },
+                notes=_notes_from_json(raw.get("notes")),
+                base_notes=_notes_from_json(raw.get("base_notes")),
             )  # an old file's "deleted" tombstones are ignored
         except (ValueError, AttributeError, TypeError):
             corrupt = self.path.with_name(self.path.name + ".corrupt")
@@ -65,6 +78,8 @@ class ShadowFile:
             "bitmaps": {k: v.to_dict() for k, v in state.bitmaps.items()},
             "base_habits": habits_to_json(state.base_habits),
             "base_bitmaps": {k: v.to_dict() for k, v in state.base_bitmaps.items()},
+            "notes": state.notes,
+            "base_notes": state.base_notes,
         }
         tmp = self.path.with_name(self.path.name + ".tmp")
         tmp.write_text(json.dumps(payload), encoding="utf-8")

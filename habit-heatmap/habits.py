@@ -122,3 +122,21 @@ def habits_from_json(raw: list | None) -> list[Habit]:
         except (KeyError, TypeError, ValueError, AttributeError) as exc:
             raise ValueError(f"malformed habit entry: {item!r}") from exc
     return out
+
+
+def reorder(habits: list[Habit], ordered_ids: list[str]) -> list[Habit]:
+    """Habits in the given id order. Unknown/duplicate ids are ignored; habits not
+    mentioned keep their relative order at the end."""
+    by_id = {h.id: h for h in habits}
+    seen: set[str] = set()
+    out: list[Habit] = []
+    for hid in ordered_ids:
+        if hid in by_id and hid not in seen:
+            out.append(by_id[hid])
+            seen.add(hid)
+    return out + [h for h in habits if h.id not in seen]
+
+
+def priority_numbers(habits: list[Habit]) -> dict[str, int]:
+    """1-based priority of each active habit (list order = priority order)."""
+    return {h.id: n for n, h in enumerate(active(habits), start=1)}

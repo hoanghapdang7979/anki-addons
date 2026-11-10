@@ -110,3 +110,27 @@ def test_orphan_ids_are_stored_ids_without_a_habit():
     habits = make("A", "B")
     assert orphan_ids(habits, {"h0", "h1", "ghost"}) == {"ghost"}
     assert orphan_ids(habits, {"h0"}) == set()
+
+
+from habits import priority_numbers, reorder  # noqa: E402
+
+
+def test_reorder_follows_the_given_id_order():
+    habits = make("A", "B", "C")
+    assert [x.id for x in reorder(habits, ["h2", "h0", "h1"])] == ["h2", "h0", "h1"]
+
+
+def test_reorder_ignores_unknown_and_duplicate_ids_and_keeps_missing_ones_at_the_end():
+    habits = make("A", "B", "C")
+    assert [x.id for x in reorder(habits, ["h2", "nope", "h2"])] == ["h2", "h0", "h1"]
+
+
+def test_reorder_does_not_mutate_the_input():
+    habits = make("A", "B")
+    reorder(habits, ["h1", "h0"])
+    assert [x.id for x in habits] == ["h0", "h1"]
+
+
+def test_priority_numbers_count_only_active_habits_in_list_order():
+    habits = archive_habit(make("A", "B", "C"), "h1")
+    assert priority_numbers(habits) == {"h0": 1, "h2": 2}

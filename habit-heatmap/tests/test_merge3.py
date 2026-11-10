@@ -115,3 +115,37 @@ def test_remote_archive_propagates():
 
 def test_everything_wiped_remotely_but_never_synced_before_restores_local():
     assert ids(merge_habits([], [h("a")], [])) == ["a"]
+
+
+# --- habit order (drag-to-reorder must survive sync) ----------------------
+
+
+def test_local_reorder_is_kept_when_remote_order_is_unchanged():
+    base = [h("a"), h("b"), h("c")]
+    assert ids(merge_habits(base, [h("c"), h("a"), h("b")], base)) == ["c", "a", "b"]
+
+
+def test_remote_reorder_is_adopted_when_local_order_is_unchanged():
+    base = [h("a"), h("b"), h("c")]
+    assert ids(merge_habits(base, base, [h("b"), h("c"), h("a")])) == ["b", "c", "a"]
+
+
+def test_both_reordered_remote_order_wins():
+    base = [h("a"), h("b"), h("c")]
+    assert ids(merge_habits(base, [h("c"), h("b"), h("a")], [h("b"), h("a"), h("c")])) == ["b", "a", "c"]
+
+
+def test_local_reorder_survives_a_habit_added_remotely():
+    base = [h("a"), h("b")]
+    merged = merge_habits(base, [h("b"), h("a")], [h("a"), h("b"), h("R")])
+    assert ids(merged) == ["b", "a", "R"]
+
+
+def test_local_reorder_survives_a_habit_deleted_remotely():
+    base = [h("a"), h("b"), h("c")]
+    assert ids(merge_habits(base, [h("c"), h("b"), h("a")], [h("a"), h("b")])) == ["b", "a"]
+
+
+def test_locally_added_habit_goes_after_the_local_order():
+    base = [h("a"), h("b")]
+    assert ids(merge_habits(base, [h("b"), h("a"), h("L")], base)) == ["b", "a", "L"]

@@ -26,19 +26,31 @@ def merge_bitmap(base: Bitmap, local: Bitmap, remote: Bitmap) -> Bitmap:
 
 
 def merge_habits(base: list[Habit], local: list[Habit], remote: list[Habit]) -> list[Habit]:
-    """Union by id with removal propagation. Remote order first, then local-only
-    additions. If both sides edited the same habit, the remote copy wins."""
+    """Union by id with removal propagation. If both sides edited the same habit,
+    the remote copy wins.
+
+    Order (drag-to-reorder is a priority list, so it must survive sync): if the
+    remote side did not reorder the habits it already shared with `base`, keep the
+    local order; otherwise use the remote order. Habits only the other side has
+    are appended after.
+    """
     b = {h.id: h for h in base}
     l = {h.id: h for h in local}
     r = {h.id: h for h in remote}
-    order = [h.id for h in remote] + [h.id for h in local if h.id not in r]
-    merged: list[Habit] = []
-    for hid in order:
+    chosen: dict[str, Habit] = {}
+    for hid in [h.id for h in remote] + [h.id for h in local if h.id not in r]:
         if hid in l and hid in r:
-            merged.append(r[hid] if r[hid] != b.get(hid) else l[hid])
+            chosen[hid] = r[hid] if r[hid] != b.get(hid) else l[hid]
         elif hid in l:  # only local has it: keep if added locally, drop if remote deleted it
             if hid not in b:
-                merged.append(l[hid])
+                chosen[hid] = l[hid]
         elif hid not in b:  # only remote has it: keep if added remotely
-            merged.append(r[hid])
-    return merged
+            chosen[hid] = r[hid]
+
+    base_order = [h.id for h in base if h.id in chosen]
+    remote_shared = [h.id for h in remote if h.id in chosen and h.id in b]
+    primary = local if remote_shared == [i for i in base_order if i in r] else remote
+    order = [h.id for h in primary if h.id in chosen]
+    order += [h.id for h in remote if h.id in chosen and h.id not in order]
+    order += [h.id for h in local if h.id in chosen and h.id not in order]
+    return [chosen[hid] for hid in order]
